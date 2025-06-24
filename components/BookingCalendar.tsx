@@ -69,6 +69,22 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookingData, updateBo
     return 0;
   };
 
+  // Build modifiers object without undefined values
+  const modifiers: Record<string, any> = {
+    selected: isDateSelected,
+    range_middle: (date: Date) => {
+      if (!bookingData.checkIn || !bookingData.checkOut) return false;
+      const dateTime = date.getTime();
+      return dateTime > bookingData.checkIn.getTime() && dateTime < bookingData.checkOut.getTime();
+    },
+  };
+  if (bookingData.checkIn) {
+    modifiers.range_start = (date: Date) => date.getTime() === bookingData.checkIn!.getTime();
+  }
+  if (bookingData.checkOut) {
+    modifiers.range_end = (date: Date) => date.getTime() === bookingData.checkOut!.getTime();
+  }
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -99,16 +115,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookingData, updateBo
             onSelect={handleDateSelect}
             disabled={isDateDisabled}
             className="rounded-md border"
-            modifiers={{
-              selected: isDateSelected,
-              range_start: bookingData.checkIn ? (date: Date) => date.getTime() === bookingData.checkIn!.getTime() : undefined,
-              range_end: bookingData.checkOut ? (date: Date) => date.getTime() === bookingData.checkOut!.getTime() : undefined,
-              range_middle: (date: Date) => {
-                if (!bookingData.checkIn || !bookingData.checkOut) return false;
-                const dateTime = date.getTime();
-                return dateTime > bookingData.checkIn.getTime() && dateTime < bookingData.checkOut.getTime();
-              }
-            }}
+            modifiers={modifiers}
             modifiersStyles={{
               range_start: { backgroundColor: '#B5651D', color: 'white' },
               range_end: { backgroundColor: '#B5651D', color: 'white' },
