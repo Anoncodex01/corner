@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Calendar, Search, Filter, Eye, Edit, X, Check } from 'lucide-react';
-import { bookingService } from '@/lib/booking-service';
+import { supabase } from '@/lib/supabaseClient';
 import { Booking } from '@/lib/types';
 import { toast } from 'sonner';
 
@@ -20,9 +20,19 @@ export default function BookingsPage() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   useEffect(() => {
-    const allBookings = bookingService.getBookings();
-    setBookings(allBookings);
-    setFilteredBookings(allBookings);
+    const fetchBookings = async () => {
+      const { data, error } = await supabase.from('bookings').select('*');
+      if (error) {
+        toast.error('Failed to load bookings');
+        setBookings([]);
+        setFilteredBookings([]);
+      } else {
+        // Map fields if needed
+        setBookings(data || []);
+        setFilteredBookings(data || []);
+      }
+    };
+    fetchBookings();
   }, []);
 
   useEffect(() => {
@@ -56,22 +66,26 @@ export default function BookingsPage() {
     }
   };
 
-  const handleStatusUpdate = (bookingId: string, newStatus: string) => {
-    const updated = bookingService.updateBooking(bookingId, { status: newStatus as any });
-    if (updated) {
-      setBookings(prev => prev.map(b => b.id === bookingId ? updated : b));
-      toast.success(`Booking ${newStatus}`);
+  const handleStatusUpdate = async (bookingId: string, newStatus: string) => {
+    const { error } = await supabase.from('bookings').update({ status: newStatus as Booking['status'] }).eq('id', bookingId);
+    if (error) {
+      toast.error('Failed to update booking status');
+      return;
     }
+    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: newStatus as Booking['status'] } : b));
+    setFilteredBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: newStatus as Booking['status'] } : b));
+      toast.success(`Booking ${newStatus}`);
   };
 
-  const handleCancelBooking = (bookingId: string) => {
-    const success = bookingService.cancelBooking(bookingId);
-    if (success) {
-      setBookings(prev => prev.map(b => 
-        b.id === bookingId ? { ...b, status: 'cancelled' as any } : b
-      ));
-      toast.success('Booking cancelled');
+  const handleCancelBooking = async (bookingId: string) => {
+    const { error } = await supabase.from('bookings').update({ status: 'cancelled' as Booking['status'] }).eq('id', bookingId);
+    if (error) {
+      toast.error('Failed to cancel booking');
+      return;
     }
+    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'cancelled' as Booking['status'] } : b));
+    setFilteredBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'cancelled' as Booking['status'] } : b));
+      toast.success('Booking cancelled');
   };
 
   return (
@@ -135,9 +149,9 @@ export default function BookingsPage() {
                       <div className="flex items-center space-x-4">
                         <div>
                           <h3 className="font-semibold text-gray-900">
-                            {booking.guestInfo.firstName} {booking.guestInfo.lastName}
+                            {(booking.guestInfo?.firstName || 'N/A')} {(booking.guestInfo?.lastName || '')}
                           </h3>
-                          <p className="text-sm text-gray-600">{booking.guestInfo.email}</p>
+                          <p className="text-sm text-gray-600">{booking.guestInfo?.email || 'N/A'}</p>
                           <p className="text-xs text-gray-500">ID: {booking.id}</p>
                         </div>
                         <Badge className={getStatusColor(booking.status)}>
@@ -148,11 +162,23 @@ export default function BookingsPage() {
                       <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div>
                           <span className="text-gray-500">Check-in:</span>
-                          <p className="font-medium">{booking.checkIn.toLocaleDateString()}</p>
+                          <p className="font-medium">
+                            {booking.checkIn
+                              ? (typeof booking.checkIn === 'string'
+                                  ? new Date(booking.checkIn).toLocaleDateString()
+                                  : booking.checkIn.toLocaleDateString())
+                              : 'N/A'}
+                          </p>
                         </div>
                         <div>
                           <span className="text-gray-500">Check-out:</span>
-                          <p className="font-medium">{booking.checkOut.toLocaleDateString()}</p>
+                          <p className="font-medium">
+                            {booking.checkOut
+                              ? (typeof booking.checkOut === 'string'
+                                  ? new Date(booking.checkOut).toLocaleDateString()
+                                  : booking.checkOut.toLocaleDateString())
+                              : 'N/A'}
+                          </p>
                         </div>
                         <div>
                           <span className="text-gray-500">Guests:</span>
@@ -160,17 +186,16 @@ export default function BookingsPage() {
                         </div>
                         <div>
                           <span className="text-gray-500">Total:</span>
-                          <p className="font-medium">£{booking.totalPrice.toFixed(2)}</p>
+                          <p className="font-medium">£{typeof booking.totalPrice === 'number' ? booking.totalPrice.toFixed(2) : '0.00'}</p>
                         </div>
                       </div>
                       
                       <div className="mt-2">
                         <span className="text-gray-500 text-sm">Accommodation:</span>
                         <p className="text-sm">
-                          {booking.isWholeProperty 
-                            ? 'Entire Property' 
-                            : `Rooms: ${booking.roomIds.join(', ')}`
-                          }
+                          {booking.isWholeProperty
+                            ? 'Entire Property'
+                            : `Rooms: ${(Array.isArray(booking.roomIds) ? booking.roomIds.join(', ') : 'N/A')}`}
                         </p>
                       </div>
                     </div>
@@ -195,20 +220,28 @@ export default function BookingsPage() {
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
                                   <h4 className="font-semibold mb-2">Guest Information</h4>
-                                  <p><strong>Name:</strong> {selectedBooking.guestInfo.firstName} {selectedBooking.guestInfo.lastName}</p>
-                                  <p><strong>Email:</strong> {selectedBooking.guestInfo.email}</p>
-                                  <p><strong>Phone:</strong> {selectedBooking.guestInfo.phone}</p>
+                                  <p><strong>Name:</strong> {(selectedBooking.guestInfo?.firstName || 'N/A')} {(selectedBooking.guestInfo?.lastName || '')}</p>
+                                  <p><strong>Email:</strong> {selectedBooking.guestInfo?.email || 'N/A'}</p>
+                                  <p><strong>Phone:</strong> {selectedBooking.guestInfo?.phone || 'N/A'}</p>
                                 </div>
                                 <div>
                                   <h4 className="font-semibold mb-2">Booking Details</h4>
-                                  <p><strong>Check-in:</strong> {selectedBooking.checkIn.toLocaleDateString()}</p>
-                                  <p><strong>Check-out:</strong> {selectedBooking.checkOut.toLocaleDateString()}</p>
+                                  <p><strong>Check-in:</strong> {selectedBooking.checkIn
+                                    ? (typeof selectedBooking.checkIn === 'string'
+                                        ? new Date(selectedBooking.checkIn).toLocaleDateString()
+                                        : selectedBooking.checkIn.toLocaleDateString())
+                                    : 'N/A'}</p>
+                                  <p><strong>Check-out:</strong> {selectedBooking.checkOut
+                                    ? (typeof selectedBooking.checkOut === 'string'
+                                        ? new Date(selectedBooking.checkOut).toLocaleDateString()
+                                        : selectedBooking.checkOut.toLocaleDateString())
+                                    : 'N/A'}</p>
                                   <p><strong>Guests:</strong> {selectedBooking.guests}</p>
                                   <p><strong>Status:</strong> <Badge className={getStatusColor(selectedBooking.status)}>{selectedBooking.status}</Badge></p>
                                 </div>
                               </div>
                               
-                              {selectedBooking.guestInfo.specialRequests && (
+                              {selectedBooking.guestInfo?.specialRequests && (
                                 <div>
                                   <h4 className="font-semibold mb-2">Special Requests</h4>
                                   <p className="text-gray-700">{selectedBooking.guestInfo.specialRequests}</p>
@@ -217,11 +250,11 @@ export default function BookingsPage() {
                               
                               <div>
                                 <h4 className="font-semibold mb-2">Pricing</h4>
-                                <p><strong>Base Price:</strong> £{selectedBooking.basePrice.toFixed(2)}</p>
-                                <p><strong>Total Price:</strong> £{selectedBooking.totalPrice.toFixed(2)}</p>
+                                <p><strong>Base Price:</strong> £{typeof selectedBooking.basePrice === 'number' ? selectedBooking.basePrice.toFixed(2) : '0.00'}</p>
+                                <p><strong>Total Price:</strong> £{typeof selectedBooking.totalPrice === 'number' ? selectedBooking.totalPrice.toFixed(2) : '0.00'}</p>
                               </div>
                               
-                              {selectedBooking.addOns.length > 0 && (
+                              {selectedBooking.addOns && Array.isArray(selectedBooking.addOns) && selectedBooking.addOns.length > 0 && (
                                 <div>
                                   <h4 className="font-semibold mb-2">Add-ons</h4>
                                   <ul className="list-disc list-inside">

@@ -38,9 +38,9 @@ export default function Header() {
   }, []);
 
   return (
-    <header
+    <header 
       className={`sticky top-0 z-50 w-full transition-all duration-300 ${
-        isScrolled
+        isScrolled 
           ? 'bg-white/80 backdrop-blur-lg shadow-sm'
           : 'bg-white/50'
       }`}
@@ -85,30 +85,30 @@ export default function Header() {
             <Button asChild className="hidden lg:flex btn-primary rounded-full shadow-md hover:shadow-lg transition-shadow">
               <Link href="/booking">Book Your Stay</Link>
             </Button>
-            
+
             <Sheet>
-              <SheetTrigger asChild>
-                <Button
+            <SheetTrigger asChild>
+              <Button
                   variant="outline"
-                  size="icon"
+                size="icon"
                   className="lg:hidden rounded-full"
-                >
+              >
                   <Menu className="h-5 w-5" />
-                  <span className="sr-only">Open menu</span>
-                </Button>
-              </SheetTrigger>
+                <span className="sr-only">Open menu</span>
+              </Button>
+            </SheetTrigger>
               <SheetContent side="right" className="w-[300px]">
                 <SheetHeader>
                   <SheetTitle asChild>
                     <Link href="/" className="flex items-center space-x-3 group">
-                      <div className="w-10 h-10 bg-gradient-to-br from-terracotta-500 to-ivy-500 rounded-lg flex items-center justify-center">
-                        <Home className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <h2 className="text-lg font-bold font-playfair text-terracotta-800">
-                          The Corner House
-                        </h2>
-                      </div>
+                  <div className="w-10 h-10 bg-gradient-to-br from-terracotta-500 to-ivy-500 rounded-lg flex items-center justify-center">
+                    <Home className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold font-playfair text-terracotta-800">
+                      The Corner House
+                    </h2>
+                  </div>
                     </Link>
                   </SheetTitle>
                 </SheetHeader>
@@ -135,13 +135,13 @@ export default function Header() {
                   <SheetClose asChild>
                     <Button asChild className="w-full btn-primary rounded-full">
                       <Link href="/booking">
-                        Book Your Stay
-                      </Link>
-                    </Button>
+                      Book Your Stay
+                    </Link>
+                  </Button>
                   </SheetClose>
-                </div>
-              </SheetContent>
-            </Sheet>
+              </div>
+            </SheetContent>
+          </Sheet>
           </div>
         </div>
       </div>

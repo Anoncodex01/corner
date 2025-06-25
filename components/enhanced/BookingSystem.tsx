@@ -148,12 +148,11 @@ export default function EnhancedBookingSystem({
                 {availability.priceCalculation.pricingRules.map((ruleApplication, index) => (
                   <div key={index} className="flex justify-between">
                     <span className="flex items-center space-x-2">
-                      <span>{ruleApplication.rule.name}:</span>
+                      <span>{ruleApplication.rule.rule_type.replace('_', ' ')}:</span>
                       <Badge variant="outline" className="text-xs">
-                        {ruleApplication.rule.modifierType === 'percentage' 
-                          ? `${ruleApplication.rule.priceModifier > 0 ? '+' : ''}${ruleApplication.rule.priceModifier}%`
-                          : `${ruleApplication.rule.priceModifier > 0 ? '+' : ''}£${Math.abs(ruleApplication.rule.priceModifier)}`
-                        }
+                        {ruleApplication.rule.modifier_type === 'percentage'
+                          ? `${ruleApplication.rule.price_modifier > 0 ? '+' : ''}${ruleApplication.rule.price_modifier}%`
+                          : `${ruleApplication.rule.price_modifier > 0 ? '+' : ''}£${Math.abs(ruleApplication.rule.price_modifier)}`}
                       </Badge>
                     </span>
                     <span className={ruleApplication.adjustment >= 0 ? 'text-red-600' : 'text-green-600'}>

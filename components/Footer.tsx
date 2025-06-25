@@ -29,7 +29,7 @@ export default function Footer() {
                   className="w-9 h-9 flex items-center justify-center bg-terracotta-100/80 text-terracotta-600 rounded-full transition-all duration-300 hover:bg-terracotta-500 hover:text-white hover:scale-110"
                 >
                   <Icon className="h-4 w-4" />
-                </a>
+              </a>
               ))}
             </div>
           </div>
@@ -45,8 +45,8 @@ export default function Footer() {
                     className="text-gray-600 hover:text-terracotta-700 hover:underline underline-offset-4 transition-colors"
                   >
                     {item}
-                  </Link>
-                </li>
+                </Link>
+              </li>
               ))}
             </ul>
           </div>
@@ -79,8 +79,8 @@ export default function Footer() {
             <Button asChild className="btn-primary rounded-full shadow-md hover:shadow-lg transition-shadow">
               <Link href="/booking">
                 <Calendar className="mr-2 h-4 w-4" />
-                <span>Check Availability</span>
-              </Link>
+              <span>Check Availability</span>
+            </Link>
             </Button>
           </div>
         </div>

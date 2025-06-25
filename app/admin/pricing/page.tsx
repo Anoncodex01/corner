@@ -10,84 +10,91 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { DollarSign, Plus, Edit, Trash2, Calendar, Percent } from 'lucide-react';
-import { bookingService } from '@/lib/booking-service';
-import { PricingRule, Property } from '@/lib/types';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabaseClient';
+import { Checkbox } from '@/components/ui/checkbox';
+import { CalendarDays, Clock, Building } from 'lucide-react';
 
 export default function PricingPage() {
-  const [pricingRules, setPricingRules] = useState<PricingRule[]>([]);
-  const [properties, setProperties] = useState<Property[]>([]);
+  const [pricingRules, setPricingRules] = useState<any[]>([]);
+  const [properties, setProperties] = useState<any[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    type: 'weekend' as PricingRule['type'],
-    propertyId: '',
-    priceModifier: 0,
-    modifierType: 'percentage' as 'percentage' | 'fixed',
-    minimumStay: 1,
-    startDate: '',
-    endDate: '',
-    daysOfWeek: [] as number[],
-    isActive: true,
+    rule_type: 'seasonal',
+    modifier_type: 'percentage',
+    price_modifier: 0,
+    minimum_stay: 1,
+    start_date: '',
+    end_date: '',
+    days_of_week: [] as number[],
+    is_active: true,
+    property_id: '',
   });
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
-    const allRules = bookingService.getPricingRules();
-    const allProperties = bookingService.getProperties();
-    setPricingRules(allRules);
-    setProperties(allProperties);
+    const fetchData = async () => {
+      const { data: rules } = await supabase.from('price_rules').select('*');
+      setPricingRules(rules || []);
+      const { data: props } = await supabase.from('properties').select('*');
+      setProperties(props || []);
+    };
+    fetchData();
   }, []);
 
-  const handleCreateRule = () => {
-    const newRule = bookingService.createPricingRule({
-      name: formData.name,
-      type: formData.type,
-      propertyId: formData.propertyId || undefined,
-      priceModifier: formData.priceModifier,
-      modifierType: formData.modifierType,
-      minimumStay: formData.minimumStay,
-      startDate: formData.startDate ? new Date(formData.startDate) : undefined,
-      endDate: formData.endDate ? new Date(formData.endDate) : undefined,
-      daysOfWeek: formData.daysOfWeek.length > 0 ? formData.daysOfWeek : undefined,
-      isActive: formData.isActive,
-    });
-
-    setPricingRules(prev => [...prev, newRule]);
+  const handleCreateRule = async () => {
+    setCreating(true);
+    const payload = {
+      rule_type: formData.rule_type,
+      modifier_type: formData.modifier_type,
+      price_modifier: Number(formData.price_modifier),
+      minimum_stay: formData.minimum_stay || null,
+      start_date: formData.start_date || null,
+      end_date: formData.end_date || null,
+      days_of_week: formData.days_of_week.length > 0 ? formData.days_of_week.join(',') : null,
+      is_active: formData.is_active,
+      property_id: formData.property_id ? formData.property_id : null,
+    };
+    const { error } = await supabase.from('price_rules').insert([payload]);
+    setCreating(false);
+    if (error) {
+      console.error('Supabase error:', error);
+      toast.error('Failed to create pricing rule: ' + (error.message || 'Unknown error'));
+      return;
+    }
+    toast.success('Pricing rule created successfully');
     setIsCreateDialogOpen(false);
     resetForm();
-    toast.success('Pricing rule created successfully');
+    // Refetch rules
+    const { data: rules } = await supabase.from('price_rules').select('*');
+    setPricingRules(rules || []);
   };
 
   const resetForm = () => {
     setFormData({
-      name: '',
-      type: 'weekend',
-      propertyId: '',
-      priceModifier: 0,
-      modifierType: 'percentage',
-      minimumStay: 1,
-      startDate: '',
-      endDate: '',
-      daysOfWeek: [],
-      isActive: true,
+      rule_type: 'seasonal',
+      modifier_type: 'percentage',
+      price_modifier: 0,
+      minimum_stay: 1,
+      start_date: '',
+      end_date: '',
+      days_of_week: [],
+      is_active: true,
+      property_id: '',
     });
   };
 
   const toggleRuleStatus = (ruleId: string, isActive: boolean) => {
-    const updated = bookingService.updatePricingRule(ruleId, { isActive });
-    if (updated) {
-      setPricingRules(prev => prev.map(r => r.id === ruleId ? updated : r));
-      toast.success(`Rule ${isActive ? 'activated' : 'deactivated'}`);
-    }
+    // Implementation needed
   };
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'weekend': return 'bg-blue-100 text-blue-800';
-      case 'holiday': return 'bg-red-100 text-red-800';
-      case 'seasonal': return 'bg-green-100 text-green-800';
-      case 'length_of_stay': return 'bg-purple-100 text-purple-800';
-      case 'event': return 'bg-orange-100 text-orange-800';
+      case 'seasonal': return 'bg-blue-100 text-blue-800';
+      case 'day_of_week': return 'bg-green-100 text-green-800';
+      case 'minimum_stay': return 'bg-purple-100 text-purple-800';
+      case 'last_minute': return 'bg-orange-100 text-orange-800';
+      case 'advance_booking': return 'bg-pink-100 text-pink-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -119,116 +126,109 @@ export default function PricingPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="name">Rule Name</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="e.g., Weekend Premium"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="type">Rule Type</Label>
-                  <Select value={formData.type} onValueChange={(value: any) => setFormData(prev => ({ ...prev, type: value }))}>
+                  <Label htmlFor="rule_type">Rule Type</Label>
+                  <Select value={formData.rule_type} onValueChange={(value: any) => setFormData(prev => ({ ...prev, rule_type: value }))}>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select rule type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="weekend">Weekend</SelectItem>
-                      <SelectItem value="holiday">Holiday</SelectItem>
                       <SelectItem value="seasonal">Seasonal</SelectItem>
-                      <SelectItem value="length_of_stay">Length of Stay</SelectItem>
-                      <SelectItem value="event">Special Event</SelectItem>
+                      <SelectItem value="day_of_week">Day of Week</SelectItem>
+                      <SelectItem value="minimum_stay">Minimum Stay</SelectItem>
+                      <SelectItem value="last_minute">Last Minute</SelectItem>
+                      <SelectItem value="advance_booking">Advance Booking</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="property">Property (Optional)</Label>
-                <Select value={formData.propertyId} onValueChange={(value) => setFormData(prev => ({ ...prev, propertyId: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Apply to all properties" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">All Properties</SelectItem>
-                    {properties.map(property => (
-                      <SelectItem key={property.id} value={property.id}>
-                        {property.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div>
+                  <Label htmlFor="property_id">Property (Optional)</Label>
+                  <Select value={formData.property_id || 'all'} onValueChange={(value) => setFormData(prev => ({ ...prev, property_id: value === 'all' ? '' : value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Apply to all properties" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Properties</SelectItem>
+                      {properties.map(property => (
+                        <SelectItem key={property.id} value={property.id}>
+                          {property.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="modifier">Price Modifier</Label>
-                  <Input
-                    id="modifier"
-                    type="number"
-                    value={formData.priceModifier}
-                    onChange={(e) => setFormData(prev => ({ ...prev, priceModifier: parseFloat(e.target.value) || 0 }))}
-                    placeholder="25"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="modifierType">Modifier Type</Label>
-                  <Select value={formData.modifierType} onValueChange={(value: any) => setFormData(prev => ({ ...prev, modifierType: value }))}>
+                  <Label htmlFor="modifier_type">Modifier Type</Label>
+                  <Select value={formData.modifier_type} onValueChange={(value: any) => setFormData(prev => ({ ...prev, modifier_type: value }))}>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select modifier type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="percentage">Percentage (%)</SelectItem>
-                      <SelectItem value="fixed">Fixed Amount (£)</SelectItem>
+                      <SelectItem value="percentage">Percentage</SelectItem>
+                      <SelectItem value="fixed">Fixed Amount</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+                <div>
+                  <Label htmlFor="price_modifier">Price Modifier</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="Enter price modifier"
+                    value={formData.price_modifier}
+                    onChange={(e) => setFormData(prev => ({ ...prev, price_modifier: parseFloat(e.target.value) || 0 }))}
+                  />
+                </div>
               </div>
               
-              {formData.type === 'length_of_stay' && (
+              {formData.rule_type === 'minimum_stay' && (
                 <div>
-                  <Label htmlFor="minimumStay">Minimum Stay (nights)</Label>
+                  <Label htmlFor="minimum_stay">Minimum Stay (nights)</Label>
                   <Input
-                    id="minimumStay"
                     type="number"
-                    value={formData.minimumStay}
-                    onChange={(e) => setFormData(prev => ({ ...prev, minimumStay: parseInt(e.target.value) || 1 }))}
                     min="1"
+                    id="minimum_stay"
+                    placeholder="Enter minimum stay"
+                    value={formData.minimum_stay}
+                    onChange={(e) => setFormData(prev => ({ ...prev, minimum_stay: parseInt(e.target.value) || 1 }))}
                   />
                 </div>
               )}
               
-              {(formData.type === 'holiday' || formData.type === 'seasonal' || formData.type === 'event') && (
+              {(formData.rule_type === 'last_minute' || formData.rule_type === 'advance_booking') && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="startDate">Start Date</Label>
+                    <Label htmlFor="start_date">Start Date</Label>
                     <Input
-                      id="startDate"
                       type="date"
-                      value={formData.startDate}
-                      onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                      id="start_date"
+                      placeholder="Select start date"
+                      value={formData.start_date}
+                      onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="endDate">End Date</Label>
+                    <Label htmlFor="end_date">End Date</Label>
                     <Input
-                      id="endDate"
                       type="date"
-                      value={formData.endDate}
-                      onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
+                      id="end_date"
+                      placeholder="Select end date"
+                      value={formData.end_date}
+                      onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
                     />
                   </div>
                 </div>
               )}
               
               <div className="flex items-center space-x-2">
-                <Switch
-                  id="isActive"
-                  checked={formData.isActive}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
+                <Checkbox
+                  id="is_active"
+                  checked={formData.is_active}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked as boolean }))}
                 />
-                <Label htmlFor="isActive">Active</Label>
+                <Label htmlFor="is_active">Active</Label>
               </div>
               
               <div className="flex justify-end space-x-2">
@@ -247,87 +247,89 @@ export default function PricingPage() {
       {/* Pricing Rules List */}
       <div className="space-y-4">
         {pricingRules.map((rule) => (
-          <Card key={rule.id} className={`${rule.isActive ? '' : 'opacity-60'}`}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="text-lg font-semibold">{rule.name}</h3>
-                    <Badge className={getTypeColor(rule.type)}>
-                      {rule.type.replace('_', ' ')}
-                    </Badge>
-                    {!rule.isActive && (
-                      <Badge variant="secondary">Inactive</Badge>
-                    )}
-                  </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-500">Modifier:</span>
-                      <p className="font-medium flex items-center">
-                        {rule.modifierType === 'percentage' ? (
-                          <>
-                            <Percent className="h-3 w-3 mr-1" />
-                            {rule.priceModifier > 0 ? '+' : ''}{rule.priceModifier}%
-                          </>
-                        ) : (
-                          <>
-                            <DollarSign className="h-3 w-3 mr-1" />
-                            {rule.priceModifier > 0 ? '+' : ''}£{Math.abs(rule.priceModifier)}
-                          </>
-                        )}
-                      </p>
+          rule && rule.rule_type ? (
+            <Card key={rule.id} className={`${rule.is_active ? '' : 'opacity-60'}`}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <h3 className="text-lg font-semibold">{rule.rule_type.replace('_', ' ')}</h3>
+                      <Badge className={getTypeColor(rule.rule_type)}>
+                        {typeof rule.rule_type === 'string' ? rule.rule_type.replace('_', ' ') : 'Unknown'}
+                      </Badge>
+                      {!rule.is_active && (
+                        <Badge variant="secondary">Inactive</Badge>
+                      )}
                     </div>
                     
-                    {rule.minimumStay && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>
-                        <span className="text-gray-500">Min Stay:</span>
-                        <p className="font-medium">{rule.minimumStay} nights</p>
-                      </div>
-                    )}
-                    
-                    {rule.startDate && rule.endDate && (
-                      <div>
-                        <span className="text-gray-500">Period:</span>
-                        <p className="font-medium">
-                          {rule.startDate.toLocaleDateString()} - {rule.endDate.toLocaleDateString()}
+                        <span className="text-gray-500">Modifier:</span>
+                        <p className="font-medium flex items-center">
+                          {rule.modifier_type === 'percentage' ? (
+                            <>
+                              <Percent className="h-3 w-3 mr-1" />
+                              {rule.price_modifier > 0 ? '+' : ''}{rule.price_modifier}%
+                            </>
+                          ) : (
+                            <>
+                              <DollarSign className="h-3 w-3 mr-1" />
+                              {rule.price_modifier > 0 ? '+' : ''}£{Math.abs(rule.price_modifier)}
+                            </>
+                          )}
                         </p>
                       </div>
-                    )}
+                      
+                      {rule.minimum_stay && (
+                        <div>
+                          <span className="text-gray-500">Min Stay:</span>
+                          <p className="font-medium">{rule.minimum_stay} nights</p>
+                        </div>
+                      )}
+                      
+                      {rule.start_date && rule.end_date && (
+                        <div>
+                          <span className="text-gray-500">Period:</span>
+                          <p className="font-medium">
+                            {new Date(rule.start_date).toLocaleDateString()} - {new Date(rule.end_date).toLocaleDateString()}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {rule.days_of_week && rule.days_of_week.length > 0 && (
+                        <div>
+                          <span className="text-gray-500">Days:</span>
+                          <p className="font-medium">{getDayNames(rule.days_of_week)}</p>
+                        </div>
+                      )}
+                    </div>
                     
-                    {rule.daysOfWeek && rule.daysOfWeek.length > 0 && (
-                      <div>
-                        <span className="text-gray-500">Days:</span>
-                        <p className="font-medium">{getDayNames(rule.daysOfWeek)}</p>
+                    {rule.property_id && (
+                      <div className="mt-2">
+                        <span className="text-gray-500 text-sm">Property:</span>
+                        <span className="text-sm ml-1">
+                          {properties.find(p => p.id === rule.property_id)?.name || 'Unknown'}
+                        </span>
                       </div>
                     )}
                   </div>
                   
-                  {rule.propertyId && (
-                    <div className="mt-2">
-                      <span className="text-gray-500 text-sm">Property:</span>
-                      <span className="text-sm ml-1">
-                        {properties.find(p => p.id === rule.propertyId)?.name || 'Unknown'}
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={rule.is_active}
+                      onCheckedChange={(checked) => toggleRuleStatus(rule.id, checked)}
+                    />
+                    <Button variant="outline" size="sm">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    checked={rule.isActive}
-                    onCheckedChange={(checked) => toggleRuleStatus(rule.id, checked)}
-                  />
-                  <Button variant="outline" size="sm">
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ) : null
         ))}
       </div>
 

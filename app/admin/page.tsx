@@ -1,13 +1,17 @@
-'use client';
-
+"use client";
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Home, Users, DollarSign, TrendingUp, AlertCircle } from 'lucide-react';
 import { bookingService } from '@/lib/booking-service';
 import { Booking, Property } from '@/lib/types';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function AdminDashboard() {
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
   const [stats, setStats] = useState({
@@ -20,18 +24,29 @@ export default function AdminDashboard() {
   });
 
   useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data?.user) {
+        setIsAuthenticated(true);
+      } else {
+        router.replace('/admin-login');
+      }
+      setCheckingAuth(false);
+    };
+    checkAuth();
+  }, [router]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
     const allBookings = bookingService.getBookings();
     const allProperties = bookingService.getProperties();
-    
     setBookings(allBookings);
     setProperties(allProperties);
-    
     // Calculate stats
     const confirmedBookings = allBookings.filter(b => b.status === 'confirmed');
     const pendingBookings = allBookings.filter(b => b.status === 'pending');
     const totalRevenue = confirmedBookings.reduce((sum, b) => sum + b.totalPrice, 0);
     const avgBookingValue = confirmedBookings.length > 0 ? totalRevenue / confirmedBookings.length : 0;
-    
     setStats({
       totalBookings: allBookings.length,
       confirmedBookings: confirmedBookings.length,
@@ -40,7 +55,14 @@ export default function AdminDashboard() {
       occupancyRate: 75, // Mock calculation
       avgBookingValue,
     });
-  }, []);
+  }, [isAuthenticated]);
+
+  if (checkingAuth) {
+    return <div className="flex items-center justify-center min-h-screen text-gray-500">Loading...</div>;
+  }
+  if (!isAuthenticated) {
+    return null;
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {

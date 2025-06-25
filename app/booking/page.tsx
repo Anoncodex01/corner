@@ -16,6 +16,7 @@ import BookingCalendar from '@/components/BookingCalendar';
 import RoomSelection from '@/components/RoomSelection';
 import EnhancedAddons from '@/components/EnhancedAddons';
 import { format } from 'date-fns';
+import { supabase } from '@/lib/supabaseClient';
 
 function BookingContent() {
   const searchParams = useSearchParams();
@@ -46,40 +47,15 @@ function BookingContent() {
   });
 
   const [isLoading, setIsLoading] = useState(false);
-
-  // Enhanced add-ons with premium spirits
-  const allAddons = [
-    // Premium Spirits
-    { id: 'giraffe-gin', name: 'Giraffe Gin Mango & Passion Fruit 70cl 40%', price: 51.10, description: 'Premium tropical gin from Zanzibar', category: 'Premium Spirits' },
-    { id: 'hakuna-matata-gin', name: 'Hakuna Matata Gin Kiwi & Lemon 50cl 38%', price: 37.64, description: 'Refreshing craft gin with tropical flavours', category: 'Premium Spirits' },
-    { id: 'rhino-rum', name: 'Rhino Rum Blackberry & Blueberry 70cl 40%', price: 51.10, description: 'Bold African-inspired rum with berry infusion', category: 'Premium Spirits' },
-    // Standard Add-ons
-    { id: 'breakfast', name: 'Braunston Butcher Breakfast Package', price: 15, description: 'Local breakfast delivered fresh daily', category: 'Food & Dining' },
-    { id: 'welcome-drinks', name: 'Welcome Drinks Package', price: 25, description: 'Curated selection of local beverages', category: 'Beverages' },
-    { id: 'late-checkout', name: 'Late Check-out (2 PM)', price: 20, description: 'Extend your stay until 2 PM', category: 'Services' },
-    { id: 'parking', name: 'Additional Parking Space', price: 5, description: 'Extra parking space per night', category: 'Services' },
-  ];
+  const [rooms, setRooms] = useState<any[]>([]);
+  const [addons, setAddons] = useState<any[]>([]);
+  const [priceRules, setPriceRules] = useState<any[]>([]);
 
   useEffect(() => {
-    // Calculate total price when selection changes
-    let basePrice = 0;
-    if (bookingData.bookingType === 'house') {
-      basePrice = 400; // Whole house price
-    } else {
-      // Calculate based on selected rooms
-      basePrice = bookingData.selectedRooms.length * 100; // Average room price
-    }
-    
-    const addOnPrice = bookingData.addOns.reduce((total, addOnId) => {
-      const addOn = allAddons.find(a => a.id === addOnId);
-      return total + (addOn?.price || 0);
-    }, 0);
-
-    setBookingData(prev => ({
-      ...prev,
-      totalPrice: basePrice + addOnPrice
-    }));
-  }, [bookingData.selectedRooms, bookingData.addOns, bookingData.bookingType]);
+    supabase.from('rooms').select('*').then(({ data }) => setRooms(data || []));
+    supabase.from('addons').select('*').then(({ data }) => setAddons(data || []));
+    supabase.from('price_rules').select('*').then(({ data }) => setPriceRules(data || []));
+  }, []);
 
   const handleStepNext = () => {
     if (step === 1 && (!bookingData.checkIn || !bookingData.checkOut)) {
@@ -99,12 +75,30 @@ function BookingContent() {
 
   const handleBookingSubmit = async () => {
     setIsLoading(true);
-    
-    // Simulate booking process
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      toast.success('Booking confirmed! Check your email for details.');
-      setStep(5); // Success step
+      const { error } = await supabase.from('bookings').insert([
+        {
+          property_id: bookingData.selectedRooms.length > 0 ? bookingData.selectedRooms[0] : null, // or let user pick property
+          room_ids: bookingData.selectedRooms,
+          is_whole_property: bookingData.bookingType === 'house',
+          check_in: bookingData.checkIn ? bookingData.checkIn.toISOString().slice(0, 10) : null,
+          check_out: bookingData.checkOut ? bookingData.checkOut.toISOString().slice(0, 10) : null,
+          guests: bookingData.guests,
+          guest_info: bookingData.guestInfo,
+          add_ons: bookingData.addOns,
+          base_price: bookingData.totalPrice, // or calculate base separately
+          total_price: bookingData.totalPrice,
+          status: 'pending',
+          payment_status: 'pending',
+          source: 'direct',
+        }
+      ]);
+      if (error) {
+        toast.error('Booking failed. Please try again.');
+      } else {
+        toast.success('Booking confirmed! Check your email for details.');
+        setStep(5); // Success step
+      }
     } catch (error) {
       toast.error('Booking failed. Please try again.');
     } finally {
@@ -112,12 +106,64 @@ function BookingContent() {
     }
   };
 
-  const updateBookingData = (updates: Partial<typeof bookingData>) => {
-    setBookingData(prev => ({ ...prev, ...updates }));
+  const updateBookingData = (updates: any) => {
+    setBookingData(prev => {
+      const updated = { ...prev, ...updates };
+      
+      // Calculate total price based on selected rooms and add-ons
+      let totalPrice = 0;
+      
+      if (updated.bookingType === 'house') {
+        // Special whole house price
+        totalPrice = 400;
+      } else if (updated.selectedRooms.length > 0) {
+        // Calculate based on selected rooms
+        const selectedRoomData = rooms.filter(room => updated.selectedRooms.includes(room.id));
+        const roomPrice = selectedRoomData.reduce((total, room) => total + room.base_price, 0);
+        
+        // Calculate nights
+        const nights = updated.checkIn && updated.checkOut 
+          ? Math.ceil((updated.checkOut.getTime() - updated.checkIn.getTime()) / (1000 * 60 * 60 * 24))
+          : 1;
+        
+        totalPrice = roomPrice * nights;
+      }
+      
+      // Add add-on prices
+      const selectedAddons = addons.filter(addon => updated.addOns.includes(addon.id));
+      const addonPrice = selectedAddons.reduce((total, addon) => total + getAddonPrice(addon, updated.checkIn), 0);
+      totalPrice += addonPrice;
+      
+      return { ...updated, totalPrice };
+    });
   };
 
   const handleAddonsChange = (addons: string[]) => {
     updateBookingData({ addOns: addons });
+  };
+
+  // Helper to get price rule for an addon
+  const getAddonPrice = (addon: any, checkIn: Date | null) => {
+    if (!addon) return 0;
+    let price = addon.price || 0;
+    if (!checkIn) return price;
+    const today = checkIn;
+    const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'short' }); // e.g. 'Fri'
+    const rules = priceRules.filter((rule: any) =>
+      rule.addon_id === addon.id &&
+      rule.is_active &&
+      (!rule.start_date || new Date(rule.start_date) <= today) &&
+      (!rule.end_date || new Date(rule.end_date) >= today) &&
+      (!rule.days_of_week || rule.days_of_week.split(',').includes(dayOfWeek))
+    );
+    for (const rule of rules) {
+      if (rule.modifier_type === 'percent') {
+        price += price * (rule.price_modifier / 100);
+      } else {
+        price += rule.price_modifier;
+      }
+    }
+    return price;
   };
 
   return (
@@ -196,6 +242,7 @@ function BookingContent() {
                       <RoomSelection
                         bookingData={bookingData}
                         updateBookingData={updateBookingData}
+                        rooms={rooms}
                       />
                     </CardContent>
                   </Card>
@@ -240,6 +287,7 @@ function BookingContent() {
                         <div>
                           <h3 className="text-xl font-semibold mb-6 font-playfair">Enhance Your Stay</h3>
                           <EnhancedAddons
+                            addons={addons}
                             selectedAddons={bookingData.addOns}
                             onAddonsChange={handleAddonsChange}
                           />
@@ -317,6 +365,47 @@ function BookingContent() {
                         </div>
                       </div>
                       
+                      {/* Selected Rooms */}
+                      <Separator />
+                      <div className="space-y-1 text-sm">
+                        <h4 className="font-medium text-gray-600">Room{bookingData.bookingType === 'room' && bookingData.selectedRooms.length > 1 ? 's' : ''}</h4>
+                        {bookingData.bookingType === 'house' ? (
+                          <div className="font-medium text-terracotta-700">Whole House</div>
+                        ) : bookingData.selectedRooms.length > 0 ? (
+                          <ul className="list-disc list-inside">
+                            {bookingData.selectedRooms.map(roomId => {
+                              const room = rooms.find(r => r.id === roomId);
+                              return (
+                                <li key={roomId} className="text-terracotta-700 font-medium">{room ? room.name : roomId}</li>
+                              );
+                            })}
+                          </ul>
+                        ) : (
+                          <div className="text-gray-400">No room selected</div>
+                        )}
+                      </div>
+
+                      {/* Selected Add-ons */}
+                      <Separator />
+                      <div className="space-y-1 text-sm">
+                        <h4 className="font-medium text-gray-600">Add-ons</h4>
+                        {bookingData.addOns.length > 0 ? (
+                          <ul className="list-disc list-inside">
+                            {bookingData.addOns.map(addOnId => {
+                              const addOn = addons.find(a => a.id === addOnId);
+                              return addOn ? (
+                                <li key={addOn.id} className="flex justify-between">
+                                  <span className="text-terracotta-700 font-medium">{addOn.name}</span>
+                                  <span className="text-gray-600 font-semibold">+£{getAddonPrice(addOn, bookingData.checkIn)}</span>
+                                </li>
+                              ) : null;
+                            })}
+                          </ul>
+                        ) : (
+                          <div className="text-gray-400">No add-ons selected</div>
+                        )}
+                      </div>
+
                       <Separator />
 
                       <div className="space-y-2 text-sm">

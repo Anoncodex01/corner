@@ -12,6 +12,7 @@ import { Building, Plus, Edit, Eye, MapPin } from 'lucide-react';
 import { bookingService } from '@/lib/booking-service';
 import { Property } from '@/lib/types';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function PropertiesPage() {
   const [properties, setProperties] = useState<Property[]>([]);
@@ -21,49 +22,90 @@ export default function PropertiesPage() {
     name: '',
     description: '',
     address: '',
+    city: '',
+    region: '',
+    country: '',
     checkInTime: '15:00',
     checkOutTime: '11:00',
     amenities: '',
-    rules: '',
+    numRooms: '',
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [viewProperty, setViewProperty] = useState<Property | null>(null);
+  const [editProperty, setEditProperty] = useState<Property | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    description: '',
+    address: '',
+    city: '',
+    region: '',
+    country: '',
+    checkInTime: '15:00',
+    checkOutTime: '11:00',
+    amenities: '',
+    numRooms: '',
   });
 
   useEffect(() => {
-    const allProperties = bookingService.getProperties();
-    setProperties(allProperties);
+    const fetchProperties = async () => {
+      setLoading(true);
+      setError(null);
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) {
+        setError('Failed to load properties');
+        setProperties([]);
+      } else {
+        setProperties(data || []);
+      }
+      setLoading(false);
+    };
+    fetchProperties();
   }, []);
 
-  const handleCreateProperty = () => {
+  const handleCreateProperty = async () => {
     const amenitiesArray = formData.amenities.split(',').map(a => a.trim()).filter(Boolean);
-    const rulesArray = formData.rules.split(',').map(r => r.trim()).filter(Boolean);
-    
-    const newProperty = bookingService.createProperty({
+    const { error } = await supabase.from('properties').insert([
+      {
       name: formData.name,
       description: formData.description,
       address: formData.address,
-      checkInTime: formData.checkInTime,
-      checkOutTime: formData.checkOutTime,
+        city: formData.city,
+        region: formData.region,
+        country: formData.country,
+        check_in_time: formData.checkInTime,
+        check_out_time: formData.checkOutTime,
       amenities: amenitiesArray,
-      rules: rulesArray,
-      images: [], // Would be handled by file upload in real implementation
-    });
-
-    setProperties(prev => [...prev, newProperty]);
+        num_rooms: Number(formData.numRooms),
+      },
+    ]);
+    if (error) {
+      toast.error('Failed to create property');
+      return;
+    }
     setIsCreateDialogOpen(false);
     setFormData({
       name: '',
       description: '',
       address: '',
+      city: '',
+      region: '',
+      country: '',
       checkInTime: '15:00',
       checkOutTime: '11:00',
       amenities: '',
-      rules: '',
+      numRooms: '',
     });
     toast.success('Property created successfully');
+    // Refetch properties
+    const { data } = await supabase.from('properties').select('*').order('created_at', { ascending: false });
+    setProperties(data || []);
   };
 
-  const getRoomCount = (propertyId: string) => {
-    return bookingService.getRooms(propertyId).length;
-  };
+  const getRoomCount = () => 0;
 
   return (
     <div className="space-y-6">
@@ -148,14 +190,47 @@ export default function PropertiesPage() {
                 />
               </div>
               
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="city">City</Label>
+                  <Input
+                    id="city"
+                    value={formData.city}
+                    onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                    placeholder="e.g., Braunston"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="region">Region</Label>
+                  <Input
+                    id="region"
+                    value={formData.region}
+                    onChange={(e) => setFormData(prev => ({ ...prev, region: e.target.value }))}
+                    placeholder="e.g., Northamptonshire"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="country">Country</Label>
+                  <Input
+                    id="country"
+                    value={formData.country}
+                    onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
+                    placeholder="e.g., UK"
+                  />
+                </div>
               <div>
-                <Label htmlFor="rules">House Rules (comma-separated)</Label>
+                  <Label htmlFor="numRooms">Number of Rooms</Label>
                 <Input
-                  id="rules"
-                  value={formData.rules}
-                  onChange={(e) => setFormData(prev => ({ ...prev, rules: e.target.value }))}
-                  placeholder="No smoking, Quiet hours 10PM-8AM"
+                    id="numRooms"
+                    type="number"
+                    min="1"
+                    value={formData.numRooms}
+                    onChange={(e) => setFormData(prev => ({ ...prev, numRooms: e.target.value }))}
+                    placeholder="e.g., 5"
                 />
+                </div>
               </div>
               
               <div className="flex justify-end space-x-2">
@@ -181,11 +256,11 @@ export default function PropertiesPage() {
                   <CardTitle className="text-lg">{property.name}</CardTitle>
                   <div className="flex items-center text-sm text-gray-600 mt-1">
                     <MapPin className="h-4 w-4 mr-1" />
-                    {property.address}
+                    {property.city}, {property.region}, {property.country}
                   </div>
                 </div>
                 <Badge variant="outline">
-                  {getRoomCount(property.id)} rooms
+                  {property.num_rooms || 0} rooms
                 </Badge>
               </div>
             </CardHeader>
@@ -197,11 +272,11 @@ export default function PropertiesPage() {
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Check-in:</span>
-                  <span>{property.checkInTime}</span>
+                  <span>{property.check_in_time || '-'}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Check-out:</span>
-                  <span>{property.checkOutTime}</span>
+                  <span>{property.check_out_time || '-'}</span>
                 </div>
               </div>
               
@@ -224,11 +299,35 @@ export default function PropertiesPage() {
               )}
               
               <div className="flex space-x-2">
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setViewProperty(property)}
+                >
                   <Eye className="h-4 w-4 mr-1" />
                   View
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => {
+                    setEditProperty(property);
+                    setEditFormData({
+                      name: property.name || '',
+                      description: property.description || '',
+                      address: property.address || '',
+                      city: property.city || '',
+                      region: property.region || '',
+                      country: property.country || '',
+                      checkInTime: property.check_in_time || '15:00',
+                      checkOutTime: property.check_out_time || '11:00',
+                      amenities: (property.amenities || []).join(', '),
+                      numRooms: property.num_rooms ? String(property.num_rooms) : '',
+                    });
+                  }}
+                >
                   <Edit className="h-4 w-4 mr-1" />
                   Edit
                 </Button>
@@ -250,6 +349,185 @@ export default function PropertiesPage() {
             </Button>
           </CardContent>
         </Card>
+      )}
+
+      {viewProperty && (
+        <Dialog open={!!viewProperty} onOpenChange={() => setViewProperty(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>{viewProperty.name}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2">
+              <div className="text-sm text-gray-600">
+                <MapPin className="inline h-4 w-4 mr-1" />
+                {viewProperty.address}, {viewProperty.city}, {viewProperty.region}, {viewProperty.country}
+              </div>
+              <div className="text-gray-700 text-base mb-2">{viewProperty.description}</div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Check-in:</span>
+                <span>{viewProperty.check_in_time || '-'}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Check-out:</span>
+                <span>{viewProperty.check_out_time || '-'}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Rooms:</span>
+                <span>{viewProperty.num_rooms || '-'}</span>
+              </div>
+              {viewProperty.amenities && viewProperty.amenities.length > 0 && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Amenities:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {viewProperty.amenities.map((amenity, idx) => (
+                      <Badge key={idx} variant="secondary" className="text-xs">{amenity}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end mt-4">
+              <Button variant="outline" onClick={() => setViewProperty(null)}>Close</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {editProperty && (
+        <Dialog open={!!editProperty} onOpenChange={() => setEditProperty(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Edit {editProperty.name}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="editName">Property Name</Label>
+                  <Input
+                    id="editName"
+                    value={editFormData.name}
+                    onChange={e => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="editAddress">Address</Label>
+                  <Input
+                    id="editAddress"
+                    value={editFormData.address}
+                    onChange={e => setEditFormData(prev => ({ ...prev, address: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="editCity">City</Label>
+                  <Input
+                    id="editCity"
+                    value={editFormData.city}
+                    onChange={e => setEditFormData(prev => ({ ...prev, city: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="editRegion">Region</Label>
+                  <Input
+                    id="editRegion"
+                    value={editFormData.region}
+                    onChange={e => setEditFormData(prev => ({ ...prev, region: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="editCountry">Country</Label>
+                  <Input
+                    id="editCountry"
+                    value={editFormData.country}
+                    onChange={e => setEditFormData(prev => ({ ...prev, country: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="editNumRooms">Number of Rooms</Label>
+                  <Input
+                    id="editNumRooms"
+                    type="number"
+                    min="1"
+                    value={editFormData.numRooms}
+                    onChange={e => setEditFormData(prev => ({ ...prev, numRooms: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="editDescription">Description</Label>
+                <Textarea
+                  id="editDescription"
+                  value={editFormData.description}
+                  onChange={e => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="editCheckIn">Check-in Time</Label>
+                  <Input
+                    id="editCheckIn"
+                    type="time"
+                    value={editFormData.checkInTime}
+                    onChange={e => setEditFormData(prev => ({ ...prev, checkInTime: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="editCheckOut">Check-out Time</Label>
+                  <Input
+                    id="editCheckOut"
+                    type="time"
+                    value={editFormData.checkOutTime}
+                    onChange={e => setEditFormData(prev => ({ ...prev, checkOutTime: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="editAmenities">Amenities (comma-separated)</Label>
+                <Input
+                  id="editAmenities"
+                  value={editFormData.amenities}
+                  onChange={e => setEditFormData(prev => ({ ...prev, amenities: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end mt-4 space-x-2">
+              <Button variant="outline" onClick={() => setEditProperty(null)}>Cancel</Button>
+              <Button
+                className="btn-primary"
+                onClick={async () => {
+                  const amenitiesArray = editFormData.amenities.split(',').map(a => a.trim()).filter(Boolean);
+                  const { error } = await supabase.from('properties').update({
+                    name: editFormData.name,
+                    description: editFormData.description,
+                    address: editFormData.address,
+                    city: editFormData.city,
+                    region: editFormData.region,
+                    country: editFormData.country,
+                    check_in_time: editFormData.checkInTime,
+                    check_out_time: editFormData.checkOutTime,
+                    amenities: amenitiesArray,
+                    num_rooms: Number(editFormData.numRooms),
+                  }).eq('id', editProperty.id);
+                  if (error) {
+                    toast.error('Failed to update property');
+                  } else {
+                    toast.success('Property updated successfully');
+                    setEditProperty(null);
+                    // Refetch properties
+                    const { data } = await supabase.from('properties').select('*').order('created_at', { ascending: false });
+                    setProperties(data || []);
+                  }
+                }}
+              >
+                Save Changes
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

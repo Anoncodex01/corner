@@ -3,11 +3,17 @@ export interface Property {
   name: string;
   description: string;
   address: string;
+  city: string;
+  region: string;
+  country: string;
   images: string[];
   amenities: string[];
   rules: string[];
   checkInTime: string;
   checkOutTime: string;
+  check_in_time?: string;
+  check_out_time?: string;
+  num_rooms: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,22 +34,19 @@ export interface Room {
   updatedAt: Date;
 }
 
-export interface PricingRule {
+export interface PriceRule {
   id: string;
-  propertyId?: string;
-  roomId?: string;
-  name: string;
-  type: 'weekend' | 'holiday' | 'event' | 'seasonal' | 'length_of_stay';
-  startDate?: Date;
-  endDate?: Date;
-  daysOfWeek?: number[]; // 0-6 (Sunday-Saturday)
-  minimumStay?: number;
-  maximumStay?: number;
-  priceModifier: number; // Percentage or fixed amount
-  modifierType: 'percentage' | 'fixed';
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  rule_type: 'seasonal' | 'day_of_week' | 'minimum_stay' | 'last_minute' | 'advance_booking';
+  modifier_type: 'percentage' | 'fixed';
+  price_modifier: number; // Percentage or fixed amount
+  minimum_stay?: number;
+  start_date?: Date;
+  end_date?: Date;
+  days_of_week?: number[]; // 0-6 (Sunday-Saturday)
+  is_active: boolean;
+  property_id?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Booking {
@@ -82,7 +85,7 @@ export interface AvailabilityCheck {
 export interface PriceCalculation {
   basePrice: number;
   pricingRules: {
-    rule: PricingRule;
+    rule: PriceRule;
     adjustment: number;
   }[];
   totalPrice: number;

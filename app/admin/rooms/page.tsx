@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Bed, Plus, Edit, Eye, Users, Bath, Wifi, Tv, Coffee, Star } from 'lucide-react';
-import { bookingService } from '@/lib/booking-service';
+import { supabase } from '@/lib/supabaseClient';
 import { Room, Property } from '@/lib/types';
 import { toast } from 'sonner';
 
@@ -47,34 +47,106 @@ export default function RoomsPage() {
     keySystemDescription: '',
     isActive: true,
   });
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [creating, setCreating] = useState(false);
+  const [editRoom, setEditRoom] = useState<Room | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    propertyId: '',
+    name: '',
+    description: '',
+    animalTheme: '',
+    capacity: 1,
+    bedType: 'Single',
+    bathroom: 'shared' as 'ensuite' | 'shared',
+    basePrice: 85,
+    features: '',
+    keySystemDescription: '',
+    isActive: true,
+    images: [] as string[],
+  });
+  const [editImageFiles, setEditImageFiles] = useState<File[]>([]);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
-    const allRooms = bookingService.getRooms();
-    const allProperties = bookingService.getProperties();
-    setRooms(allRooms);
-    setProperties(allProperties);
+    const fetchRoomsAndProperties = async () => {
+      const { data: propertiesData } = await supabase.from('properties').select('*');
+      setProperties(propertiesData || []);
+      const { data: roomsData } = await supabase.from('rooms').select('*');
+      setRooms(
+        (roomsData || []).map((room) => ({
+          ...room,
+          propertyId: room.property_id,
+          bedType: room.bed_type,
+          basePrice: room.base_price,
+          features: room.features || [],
+          isActive: room.is_active,
+        }))
+      );
+    };
+    fetchRoomsAndProperties();
   }, []);
 
-  const handleCreateRoom = () => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setImageFiles(Array.from(e.target.files));
+    }
+  };
+
+  const handleCreateRoom = async () => {
+    setCreating(true);
     const featuresArray = formData.features.split(',').map(f => f.trim()).filter(Boolean);
-    
-    const newRoom = bookingService.createRoom({
-      propertyId: formData.propertyId,
+    let imageUrls: string[] = [];
+    if (imageFiles.length > 0) {
+      for (const file of imageFiles) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+        const { data, error: uploadError } = await supabase.storage.from('room-images').upload(fileName, file);
+        if (uploadError) {
+          toast.error('Failed to upload image');
+          setCreating(false);
+          return;
+        }
+        const { data: urlData } = supabase.storage.from('room-images').getPublicUrl(fileName);
+        if (urlData?.publicUrl) {
+          imageUrls.push(urlData.publicUrl);
+        }
+      }
+    }
+    const { error } = await supabase.from('rooms').insert([
+      {
+        property_id: formData.propertyId,
       name: formData.name,
       description: formData.description,
       capacity: formData.capacity,
-      bedType: formData.bedType,
+        bed_type: formData.bedType,
       bathroom: formData.bathroom,
-      basePrice: formData.basePrice,
+        base_price: formData.basePrice,
       features: featuresArray,
-      images: [], // Would be handled by file upload in real implementation
-      isActive: formData.isActive,
-    });
-
-    setRooms(prev => [...prev, newRoom]);
+        is_active: formData.isActive,
+        images: imageUrls,
+      },
+    ]);
+    setCreating(false);
+    if (error) {
+      toast.error('Failed to create room');
+      return;
+    }
     setIsCreateDialogOpen(false);
     resetForm();
+    setImageFiles([]);
     toast.success('Room created successfully');
+    // Refetch rooms
+    const { data: roomsData } = await supabase.from('rooms').select('*');
+    setRooms(
+      (roomsData || []).map((room) => ({
+        ...room,
+        propertyId: room.property_id,
+        bedType: room.bed_type,
+        basePrice: room.base_price,
+        features: room.features || [],
+        isActive: room.is_active,
+      }))
+    );
   };
 
   const resetForm = () => {
@@ -93,12 +165,14 @@ export default function RoomsPage() {
     });
   };
 
-  const toggleRoomStatus = (roomId: string, isActive: boolean) => {
-    const updated = bookingService.updateRoom(roomId, { isActive });
-    if (updated) {
-      setRooms(prev => prev.map(r => r.id === roomId ? updated : r));
-      toast.success(`Room ${isActive ? 'activated' : 'deactivated'}`);
+  const toggleRoomStatus = async (roomId: string, isActive: boolean) => {
+    const { error } = await supabase.from('rooms').update({ is_active: isActive }).eq('id', roomId);
+    if (error) {
+      toast.error('Failed to update room status');
+      return;
     }
+    setRooms(prev => prev.map(r => r.id === roomId ? { ...r, isActive } : r));
+      toast.success(`Room ${isActive ? 'activated' : 'deactivated'}`);
   };
 
   const getAnimalTheme = (roomName: string) => {
@@ -109,6 +183,12 @@ export default function RoomsPage() {
   const getPropertyName = (propertyId: string) => {
     const property = properties.find(p => p.id === propertyId);
     return property?.name || 'Unknown Property';
+  };
+
+  const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setEditImageFiles(Array.from(e.target.files));
+    }
   };
 
   return (
@@ -272,12 +352,30 @@ export default function RoomsPage() {
                 <Label htmlFor="isActive">Active</Label>
               </div>
               
+              <div>
+                <Label htmlFor="images">Room Images</Label>
+                <Input
+                  id="images"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageChange}
+                />
+                {imageFiles.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {imageFiles.map((file, idx) => (
+                      <span key={idx} className="text-xs bg-gray-100 px-2 py-1 rounded">{file.name}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleCreateRoom} className="btn-primary">
-                  Create Room
+                <Button onClick={handleCreateRoom} className="btn-primary" disabled={creating}>
+                  {creating ? 'Creating...' : 'Create Room'}
                 </Button>
               </div>
             </div>
@@ -293,10 +391,14 @@ export default function RoomsPage() {
             <Card key={room.id} className={`overflow-hidden card-hover ${room.isActive ? '' : 'opacity-60'}`}>
               <div className="relative">
                 <div className="aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                  {room.images && room.images.length > 0 ? (
+                    <img src={room.images[0]} alt={room.name} className="object-cover w-full h-full rounded" />
+                  ) : (
                   <div className="text-center">
                     <Bed className="h-12 w-12 text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-500">Room Image</p>
                   </div>
+                  )}
                 </div>
                 <div className={`absolute top-3 left-3 bg-gradient-to-r ${theme.color} text-white px-2 py-1 rounded-full text-xs font-semibold`}>
                   {theme.name}
@@ -410,7 +512,24 @@ export default function RoomsPage() {
                       </DialogContent>
                     </Dialog>
                     
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => {
+                      setEditRoom(room);
+                      setEditFormData({
+                        propertyId: room.propertyId,
+                        name: room.name,
+                        description: room.description,
+                        animalTheme: '', // You can map this if you store it
+                        capacity: room.capacity,
+                        bedType: room.bedType,
+                        bathroom: room.bathroom,
+                        basePrice: room.basePrice,
+                        features: (room.features || []).join(', '),
+                        keySystemDescription: '', // You can map this if you store it
+                        isActive: room.isActive,
+                        images: room.images || [],
+                      });
+                      setEditImageFiles([]);
+                    }}>
                       <Edit className="h-3 w-3" />
                     </Button>
                   </div>
@@ -457,6 +576,222 @@ export default function RoomsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {editRoom && (
+        <Dialog open={!!editRoom} onOpenChange={() => setEditRoom(null)}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Room: {editRoom.name}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="editProperty">Property</Label>
+                <Select value={editFormData.propertyId} onValueChange={(value) => setEditFormData(prev => ({ ...prev, propertyId: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select property" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {properties.map(property => (
+                      <SelectItem key={property.id} value={property.id}>
+                        {property.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="editName">Room Name</Label>
+                  <Input
+                    id="editName"
+                    value={editFormData.name}
+                    onChange={e => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="editAnimalTheme">Animal Theme</Label>
+                  <Select value={editFormData.animalTheme} onValueChange={(value) => setEditFormData(prev => ({ ...prev, animalTheme: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select animal theme" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {animalThemes.map(theme => (
+                        <SelectItem key={theme.id} value={theme.id}>
+                          <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${theme.color} inline-block mr-2`}></div>
+                          <span>{theme.name}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="editDescription">Description</Label>
+                <Textarea
+                  id="editDescription"
+                  value={editFormData.description}
+                  onChange={e => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="editCapacity">Capacity</Label>
+                  <Input
+                    id="editCapacity"
+                    type="number"
+                    min="1"
+                    max="4"
+                    value={editFormData.capacity}
+                    onChange={e => setEditFormData(prev => ({ ...prev, capacity: parseInt(e.target.value) || 1 }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="editBedType">Bed Type</Label>
+                  <Select value={editFormData.bedType} onValueChange={(value) => setEditFormData(prev => ({ ...prev, bedType: value }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bedTypes.map(type => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="editBathroom">Bathroom</Label>
+                  <Select value={editFormData.bathroom} onValueChange={(value: any) => setEditFormData(prev => ({ ...prev, bathroom: value }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bathroomTypes.map(type => (
+                        <SelectItem key={type} value={type}>
+                          {type === 'ensuite' ? 'En-suite' : 'Shared'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="editBasePrice">Base Price (per night)</Label>
+                <Input
+                  id="editBasePrice"
+                  type="number"
+                  min="0"
+                  step="5"
+                  value={editFormData.basePrice}
+                  onChange={e => setEditFormData(prev => ({ ...prev, basePrice: parseFloat(e.target.value) || 0 }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="editFeatures">Features (comma-separated)</Label>
+                <Input
+                  id="editFeatures"
+                  value={editFormData.features}
+                  onChange={e => setEditFormData(prev => ({ ...prev, features: e.target.value }))}
+                  placeholder="Smart TV, Mini Fridge, Work Desk, Premium Toiletries"
+                />
+              </div>
+              <div>
+                <Label htmlFor="editImages">Room Images</Label>
+                <Input
+                  id="editImages"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleEditImageChange}
+                />
+                {editImageFiles.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {editImageFiles.map((file, idx) => (
+                      <span key={idx} className="text-xs bg-gray-100 px-2 py-1 rounded">{file.name}</span>
+                    ))}
+                  </div>
+                )}
+                {editFormData.images.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {editFormData.images.map((url, idx) => (
+                      <img key={idx} src={url} alt="Room" className="w-16 h-16 object-cover rounded" />
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="editIsActive"
+                  checked={editFormData.isActive}
+                  onCheckedChange={(checked) => setEditFormData(prev => ({ ...prev, isActive: checked }))}
+                />
+                <Label htmlFor="editIsActive">Active</Label>
+              </div>
+            </div>
+            <div className="flex justify-end mt-4 space-x-2">
+              <Button variant="outline" onClick={() => setEditRoom(null)}>Cancel</Button>
+              <Button
+                className="btn-primary"
+                disabled={editing}
+                onClick={async () => {
+                  setEditing(true);
+                  let imageUrls = [...editFormData.images];
+                  if (editImageFiles.length > 0) {
+                    for (const file of editImageFiles) {
+                      const fileExt = file.name.split('.').pop();
+                      const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+                      const { data, error: uploadError } = await supabase.storage.from('room-images').upload(fileName, file);
+                      if (uploadError) {
+                        toast.error('Failed to upload image');
+                        setEditing(false);
+                        return;
+                      }
+                      const { data: urlData } = supabase.storage.from('room-images').getPublicUrl(fileName);
+                      if (urlData?.publicUrl) {
+                        imageUrls.push(urlData.publicUrl);
+                      }
+                    }
+                  }
+                  const featuresArray = editFormData.features.split(',').map(f => f.trim()).filter(Boolean);
+                  const { error } = await supabase.from('rooms').update({
+                    property_id: editFormData.propertyId,
+                    name: editFormData.name,
+                    description: editFormData.description,
+                    capacity: editFormData.capacity,
+                    bed_type: editFormData.bedType,
+                    bathroom: editFormData.bathroom,
+                    base_price: editFormData.basePrice,
+                    features: featuresArray,
+                    is_active: editFormData.isActive,
+                    images: imageUrls,
+                  }).eq('id', editRoom.id);
+                  setEditing(false);
+                  if (error) {
+                    toast.error('Failed to update room');
+                  } else {
+                    toast.success('Room updated successfully');
+                    setEditRoom(null);
+                    // Refetch rooms
+                    const { data: roomsData } = await supabase.from('rooms').select('*');
+                    setRooms(
+                      (roomsData || []).map((room) => ({
+                        ...room,
+                        propertyId: room.property_id,
+                        bedType: room.bed_type,
+                        basePrice: room.base_price,
+                        features: room.features || [],
+                        isActive: room.is_active,
+                      }))
+                    );
+                  }
+                }}
+              >
+                {editing ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

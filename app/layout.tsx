@@ -2,8 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Inter, Playfair_Display } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
+import ClientLayoutShell from '@/components/ClientLayoutShell';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -54,13 +53,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
       <body className="font-sans antialiased">
-        <div className="min-h-screen flex flex-col">
-          <Header />
-          <main className="flex-1">
+        <ClientLayoutShell>
             {children}
-          </main>
-          <Footer />
-        </div>
+        </ClientLayoutShell>
         <Toaster />
       </body>
     </html>
