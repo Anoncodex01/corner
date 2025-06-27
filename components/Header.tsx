@@ -58,14 +58,8 @@ export default function Header() {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-3 group">
-            <div className="w-12 h-12 bg-gradient-to-br from-brand-primary-500 to-brand-secondary-500 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:rounded-lg group-hover:scale-105">
-              <Home className="h-6 w-6 text-white" />
-            </div>
-            <div className="hidden sm:block">
-              <h1 className="text-2xl font-bold font-playfair text-brand-primary-800 transition-colors group-hover:text-brand-primary-600">
-                The Corner House
-              </h1>
-              <p className="text-xs text-brand-secondary-700 -mt-1 font-medium">Braunston, Daventry</p>
+            <div className="w-18 h-18 rounded-xl overflow-hidden flex items-center justify-center transition-all duration-300 group-hover:rounded-lg group-hover:scale-105 bg-white">
+              <img src="https://l.icdbcdn.com/oh/ae2c3d70-aade-4076-96e7-f8fe48bb6611.png?w=400" alt="Logo" className="object-contain w-16 h-16" />
             </div>
           </Link>
 
