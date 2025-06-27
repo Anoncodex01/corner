@@ -46,7 +46,7 @@ export default function Home() {
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
-            backgroundImage: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.1)), url("https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop")',
+            backgroundImage: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.1)), url("/images/1.jpg")',
           }}
         />
         <div className="relative z-10 container text-center text-white">
@@ -192,7 +192,7 @@ export default function Home() {
             <div className="relative">
               <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl">
                 <img
-                  src="https://images.pexels.com/photos/2351649/pexels-photo-2351649.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&fit=crop"
+                  src="/images/3.jpeg"
                   alt="Braunston Marina"
                   className="w-full h-full object-cover"
                 />
@@ -251,7 +251,7 @@ export default function Home() {
       {/* Call to Action */}
       <section 
         className="relative bg-cover bg-center" 
-        style={{backgroundImage: 'url(https://images.pexels.com/photos/276724/pexels-photo-276724.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop)'}}
+        style={{backgroundImage: 'url(/images/4.jpg)'}}
       >
         <div className="absolute inset-0 bg-gradient-to-t from-brand-secondary-900/80 via-brand-secondary-900/60 to-brand-primary-900/40"></div>
         <div className="relative container section-padding text-center text-white">

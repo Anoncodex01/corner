@@ -89,7 +89,7 @@ export default function About() {
             <div className="relative">
               <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl">
                 <img
-                  src="https://images.pexels.com/photos/1396132/pexels-photo-1396132.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&fit=crop"
+                  src="/images/3.jpeg"
                   alt="The Corner House exterior"
                   className="w-full h-full object-cover"
                 />

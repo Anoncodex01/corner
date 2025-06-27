@@ -337,7 +337,7 @@ function BookingContent() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
-                        <img src="https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=400" alt="The Corner House" className="rounded-lg mb-4" />
+                        <img src="/images/3.jpeg" alt="The Corner House" className="rounded-lg mb-4" />
                         <h3 className="font-semibold text-terracotta-800">The Corner House</h3>
                         <p className="text-sm text-gray-500">Braunston, Daventry</p>
                         <div className="flex items-center mt-1">
