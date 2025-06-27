@@ -88,20 +88,20 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookingData, updateBo
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="text-terracotta">Select Your Dates</CardTitle>
+        <CardTitle className="text-brand-primary">Select Your Dates</CardTitle>
         <div className="flex flex-wrap gap-2">
           {bookingData.checkIn && (
-            <Badge variant="outline" className="border-terracotta text-terracotta">
+            <Badge variant="outline" className="border-brand-primary text-brand-primary">
               Check-in: {bookingData.checkIn.toLocaleDateString()}
             </Badge>
           )}
           {bookingData.checkOut && (
-            <Badge variant="outline" className="border-ivy text-ivy">
+            <Badge variant="outline" className="border-brand-secondary text-brand-secondary">
               Check-out: {bookingData.checkOut.toLocaleDateString()}
             </Badge>
           )}
           {calculateNights() > 0 && (
-            <Badge className="bg-terracotta text-white">
+            <Badge className="bg-brand-primary text-white">
               {calculateNights()} night{calculateNights() !== 1 ? 's' : ''}
             </Badge>
           )}
@@ -117,9 +117,9 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookingData, updateBo
             className="rounded-md border"
             modifiers={modifiers}
             modifiersStyles={{
-              range_start: { backgroundColor: '#B5651D', color: 'white' },
-              range_end: { backgroundColor: '#B5651D', color: 'white' },
-              range_middle: { backgroundColor: '#B5651D20', color: '#B5651D' }
+              range_start: { backgroundColor: '#1d3e3c', color: 'white' },
+              range_end: { backgroundColor: '#1d3e3c', color: 'white' },
+              range_middle: { backgroundColor: '#1d3e3c20', color: '#1d3e3c' }
             }}
           />
         </div>

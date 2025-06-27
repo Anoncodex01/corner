@@ -51,12 +51,12 @@ export default function Home() {
         />
         <div className="relative z-10 container text-center text-white">
           <div className="max-w-4xl mx-auto animate-fade-in">
-            <Badge className="mb-6 bg-terracotta-500/90 text-white border-0 text-sm px-4 py-1.5 rounded-full shadow-lg">
+            <Badge className="mb-6 bg-brand-primary-500/90 text-white border-0 text-sm px-4 py-1.5 rounded-full shadow-lg">
               Luxury Accommodation in Braunston
             </Badge>
             <h1 className="text-5xl sm:text-6xl lg:text-8xl font-bold font-playfair mb-6 leading-tight drop-shadow-lg">
               Welcome to
-              <span className="block text-terracotta-200">The Corner House</span>
+              <span className="block text-brand-primary-200">The Corner House</span>
             </h1>
             <p className="text-xl lg:text-2xl mb-10 max-w-3xl mx-auto leading-relaxed opacity-95 drop-shadow-md">
               A beautifully renovated 5-bedroom property featuring unique animal-themed suites in the heart of Braunston, Daventry.
@@ -94,7 +94,7 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="section-padding bg-gradient-to-b from-white to-terracotta-50/50">
+      <section className="section-padding bg-gradient-to-b from-white to-brand-primary-50/50">
         <div className="container">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold font-playfair mb-4 heading-gradient">
@@ -109,12 +109,12 @@ export default function Home() {
             {features.map((feature, index) => (
               <Card 
                 key={index} 
-                className="group relative overflow-hidden rounded-xl border border-terracotta-100/80 bg-white/50 p-6 shadow-sm transition-all duration-300 hover:shadow-lg hover:border-terracotta-200 hover:-translate-y-1"
+                className="group relative overflow-hidden rounded-xl border border-brand-primary-100/80 bg-white/50 p-6 shadow-sm transition-all duration-300 hover:shadow-lg hover:border-brand-primary-200 hover:-translate-y-1"
               >
-                <div className="absolute top-0 left-0 h-full w-full bg-gradient-to-br from-terracotta-50 to-ivy-50 opacity-0 transition-opacity duration-500 group-hover:opacity-20"></div>
+                <div className="absolute top-0 left-0 h-full w-full bg-gradient-to-br from-brand-primary-50 to-brand-secondary-50 opacity-0 transition-opacity duration-500 group-hover:opacity-20"></div>
                 <div className="relative">
                   <div className="mb-4">
-                    <feature.icon className="h-8 w-8 text-terracotta-600 transition-colors duration-300 group-hover:text-terracotta-700" />
+                    <feature.icon className="h-8 w-8 text-brand-primary-600 transition-colors duration-300 group-hover:text-brand-primary-700" />
                   </div>
                   <h3 className="text-xl font-semibold mb-2 text-gray-800 font-playfair">{feature.title}</h3>
                   <p className="text-gray-600 text-sm">{feature.description}</p>
@@ -151,7 +151,7 @@ export default function Home() {
       </section>
 
       {/* Location Highlights */}
-      <section className="section-padding bg-gradient-to-r from-terracotta-50 to-ivy-50">
+      <section className="section-padding bg-gradient-to-r from-brand-primary-50 to-brand-secondary-50">
         <div className="container">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -164,19 +164,19 @@ export default function Home() {
               
               <div className="space-y-4 mb-8">
                 <div className="flex items-center space-x-3">
-                  <MapPin className="h-5 w-5 text-terracotta-500" />
+                  <MapPin className="h-5 w-5 text-brand-primary-500" />
                   <span>2 minutes walk to Braunston Marina</span>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <MapPin className="h-5 w-5 text-terracotta-500" />
+                  <MapPin className="h-5 w-5 text-brand-primary-500" />
                   <span>15 minutes to Daventry town center</span>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <MapPin className="h-5 w-5 text-terracotta-500" />
+                  <MapPin className="h-5 w-5 text-brand-primary-500" />
                   <span>45 minutes to Stratford-upon-Avon</span>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <MapPin className="h-5 w-5 text-terracotta-500" />
+                  <MapPin className="h-5 w-5 text-brand-primary-500" />
                   <span>1 hour to Warwick Castle</span>
                 </div>
               </div>
@@ -213,7 +213,7 @@ export default function Home() {
       </section>
 
       {/* Testimonials */}
-      <section className="section-padding bg-terracotta-50/70">
+      <section className="section-padding bg-brand-primary-50/70">
         <div className="container">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold font-playfair mb-4 heading-gradient">
@@ -230,16 +230,16 @@ export default function Home() {
                 <CardContent className="p-8 relative">
                   <div className="flex mb-4">
                     {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="h-5 w-5 text-terracotta-400 fill-terracotta-400" />
+                      <Star key={i} className="h-5 w-5 text-brand-primary-400 fill-brand-primary-400" />
                     ))}
                   </div>
                   <p className="text-gray-700 mb-6 font-playfair text-lg italic leading-relaxed">"{testimonial.comment}"</p>
                   <div className="text-right">
-                    <p className="font-bold text-terracotta-800">{testimonial.name}</p>
-                    <p className="text-sm text-ivy-700 font-medium">{testimonial.location}</p>
+                    <p className="font-bold text-brand-primary-800">{testimonial.name}</p>
+                    <p className="text-sm text-brand-secondary-700 font-medium">{testimonial.location}</p>
                   </div>
-                  <div className="absolute top-4 right-6 text-terracotta-100 text-8xl font-serif opacity-80 z-0">
-                    ”
+                  <div className="absolute top-4 right-6 text-brand-primary-100 text-8xl font-serif opacity-80 z-0">
+                    "
                   </div>
                 </CardContent>
               </Card>
@@ -253,7 +253,7 @@ export default function Home() {
         className="relative bg-cover bg-center" 
         style={{backgroundImage: 'url(https://images.pexels.com/photos/276724/pexels-photo-276724.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop)'}}
       >
-        <div className="absolute inset-0 bg-gradient-to-t from-ivy-900/80 via-ivy-900/60 to-terracotta-900/40"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-brand-secondary-900/80 via-brand-secondary-900/60 to-brand-primary-900/40"></div>
         <div className="relative container section-padding text-center text-white">
           <h2 className="text-4xl lg:text-5xl font-bold font-playfair mb-4">
             Ready for an Unforgettable Stay?

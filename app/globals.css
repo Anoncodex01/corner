@@ -24,22 +24,22 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 180 40% 18%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
+    --secondary: 45 60% 55%;
     --secondary-foreground: 222.2 84% 4.9%;
     --muted: 210 40% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
+    --accent: 45 60% 95%;
     --accent-foreground: 222.2 84% 4.9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 180 40% 18%;
     --radius: 0.5rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
+    --chart-1: 180 40% 18%;
+    --chart-2: 45 60% 55%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
@@ -52,9 +52,9 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
+    --primary: 45 60% 55%;
     --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 180 40% 18%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
@@ -64,9 +64,9 @@
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
+    --ring: 45 60% 55%;
+    --chart-1: 45 60% 55%;
+    --chart-2: 180 40% 18%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
@@ -93,7 +93,7 @@
   }
   
   .heading-gradient {
-    @apply bg-gradient-to-r from-terracotta-600 via-terracotta-500 to-ivy-600 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-brand-primary-600 via-brand-primary-500 to-brand-secondary-600 bg-clip-text text-transparent;
   }
   
   .card-hover {
@@ -101,7 +101,7 @@
   }
   
   .btn-primary {
-    @apply bg-terracotta-600 hover:bg-terracotta-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+    @apply bg-brand-primary-600 hover:bg-brand-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
   }
   
   .btn-secondary {
@@ -127,11 +127,11 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-terracotta-300 rounded-full;
+  @apply bg-brand-primary-300 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-terracotta-400;
+  @apply bg-brand-primary-400;
 }
 
 /* Smooth transitions for all interactive elements */
@@ -143,32 +143,32 @@
 
 /* Custom colors for The Corner House */
 @layer utilities {
-  .text-terracotta-500 {
-    color: #d97706;
+  .text-brand-primary-500 {
+    color: #1d3e3c;
   }
   
-  .text-terracotta-600 {
-    color: #b45309;
+  .text-brand-primary-600 {
+    color: #1a3836;
   }
   
-  .bg-terracotta-100 {
-    background-color: #fef3c7;
+  .bg-brand-primary-100 {
+    background-color: #d9e4e1;
   }
   
-  .bg-terracotta-500 {
-    background-color: #d97706;
+  .bg-brand-primary-500 {
+    background-color: #1d3e3c;
   }
   
-  .bg-terracotta-600 {
-    background-color: #b45309;
+  .bg-brand-primary-600 {
+    background-color: #1a3836;
   }
   
-  .bg-terracotta-700 {
-    background-color: #92400e;
+  .bg-brand-primary-700 {
+    background-color: #172e2c;
   }
   
-  .hover\:bg-terracotta-700:hover {
-    background-color: #92400e;
+  .hover\:bg-brand-primary-700:hover {
+    background-color: #172e2c;
   }
   
   .bg-gray-25 {

@@ -1,12 +1,45 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Home, Heart, Award, Users } from 'lucide-react';
+import { Home, Heart, Award, Users, Wifi, Car, Utensils, Coffee, Droplets, Bed, MapPin, Clock, Shield } from 'lucide-react';
+
+const features = [
+  {
+    title: 'Free WiFi',
+    description: 'High-speed internet throughout the property',
+    icon: Wifi,
+  },
+  {
+    title: 'Free Parking',
+    description: 'On-site parking for all guests',
+    icon: Car,
+  },
+  {
+    title: 'Breakfast Available',
+    description: 'Local breakfast options delivered to your door',
+    icon: Utensils,
+  },
+  {
+    title: 'Coffee & Tea',
+    description: 'Complimentary coffee and tea facilities',
+    icon: Coffee,
+  },
+  {
+    title: 'En-suite Bathrooms',
+    description: 'Private bathrooms in every room',
+    icon: Droplets,
+  },
+  {
+    title: 'Premium Bedding',
+    description: 'Luxury bedding for a perfect night\'s sleep',
+    icon: Bed,
+  },
+];
 
 export default function About() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative py-20 sm:py-32 bg-gradient-to-r from-terracotta-600 to-ivy-600 text-white overflow-hidden">
+      <section className="relative py-20 sm:py-32 bg-gradient-to-r from-brand-primary-600 to-brand-secondary-600 text-white overflow-hidden">
         <div className="absolute inset-0 bg-hero-pattern opacity-10"></div>
         <div className="container relative z-10">
           <div className="max-w-4xl mx-auto text-center">
@@ -61,7 +94,7 @@ export default function About() {
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="absolute -bottom-6 -left-6 bg-terracotta-500 text-white p-6 rounded-xl shadow-lg">
+              <div className="absolute -bottom-6 -left-6 bg-brand-primary-500 text-white p-6 rounded-xl shadow-lg">
                 <div className="flex items-center space-x-3">
                   <Home className="h-8 w-8" />
                   <div>
@@ -143,43 +176,23 @@ export default function About() {
       </section>
 
       {/* Features & Amenities */}
-      <section className="section-padding bg-white">
+      <section className="section-padding bg-gray-50">
         <div className="container">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold font-playfair mb-4 heading-gradient">
-              Modern Amenities & Character Features
+            <h2 className="text-3xl lg:text-4xl font-bold font-playfair mb-4">
+              What Makes Us Special
             </h2>
-            <p className="text-xl text-gray-600">
-              Every detail has been carefully considered for your comfort and enjoyment.
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              From our unique animal-themed rooms to our commitment to sustainability, 
+              discover what sets The Corner House apart.
             </p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              {
-                icon: Home,
-                title: 'Unique Key System',
-                description: 'Each room features an animal-themed electronic key system for added security and character.',
-              },
-              {
-                icon: Heart,
-                title: 'Luxury Comfort',
-                description: 'Premium mattresses, high-thread-count linens, and luxury toiletries in every room.',
-              },
-              {
-                icon: Award,
-                title: 'Award-Winning Design',
-                description: 'Our renovation has been recognized for its creative blend of character and modern luxury.',
-              },
-              {
-                icon: Users,
-                title: 'Flexible Booking',
-                description: 'Book individual themed rooms or reserve the entire house for your group or event.',
-              },
-            ].map((feature, index) => (
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature, index) => (
               <Card key={index} className="text-center card-hover">
                 <CardContent className="p-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-terracotta-500 to-ivy-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-brand-primary-500 to-brand-secondary-500 rounded-full flex items-center justify-center mx-auto mb-4">
                     <feature.icon className="h-8 w-8 text-white" />
                   </div>
                   <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
@@ -192,67 +205,66 @@ export default function About() {
       </section>
 
       {/* House Rules & Policies */}
-      <section className="section-padding bg-gradient-to-r from-terracotta-50 to-ivy-50">
+      <section className="section-padding bg-gradient-to-r from-brand-primary-50 to-brand-secondary-50">
         <div className="container">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl lg:text-4xl font-bold font-playfair mb-4 heading-gradient">
-                House Rules & Policies
-              </h2>
-              <p className="text-xl text-gray-600">
-                To ensure all our guests have a wonderful stay, we ask that you respect our house rules.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-xl font-semibold mb-4 text-terracotta-700">Check-in & Check-out</h3>
-                  <ul className="space-y-2 text-gray-600">
-                    <li>• Check-in: 3:00 PM - 8:00 PM</li>
-                    <li>• Check-out: 11:00 AM</li>
-                    <li>• Late check-in available by arrangement</li>
-                    <li>• Early check-in subject to availability</li>
-                  </ul>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-xl font-semibold mb-4 text-ivy-700">Guest Guidelines</h3>
-                  <ul className="space-y-2 text-gray-600">
-                    <li>• No smoking anywhere on the property</li>
-                    <li>• Quiet hours: 10:00 PM - 8:00 AM</li>
-                    <li>• Maximum occupancy as stated per room</li>
-                    <li>• Pets welcome with prior arrangement</li>
-                  </ul>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-xl font-semibold mb-4 text-terracotta-700">Cancellation Policy</h3>
-                  <ul className="space-y-2 text-gray-600">
-                    <li>• Free cancellation up to 48 hours before check-in</li>
-                    <li>• 50% refund for cancellations within 48 hours</li>
-                    <li>• No refund for no-shows</li>
-                    <li>• Flexible policies during exceptional circumstances</li>
-                  </ul>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-xl font-semibold mb-4 text-ivy-700">What's Included</h3>
-                  <ul className="space-y-2 text-gray-600">
-                    <li>• Complimentary Wi-Fi throughout</li>
-                    <li>• Welcome refreshments on arrival</li>
-                    <li>• Free parking on-site</li>
-                    <li>• Fresh towels and luxury toiletries</li>
-                  </ul>
-                </CardContent>
-              </Card>
-            </div>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold font-playfair mb-4">
+              House Rules & Policies
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              To ensure a comfortable stay for all our guests, we have a few simple guidelines.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <Card className="p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <Clock className="h-6 w-6 text-brand-primary-500" />
+                <h3 className="text-xl font-semibold mb-4 text-brand-primary-700">Check-in & Check-out</h3>
+              </div>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li>• Check-in: 3:00 PM - 8:00 PM</li>
+                <li>• Check-out: 11:00 AM</li>
+                <li>• Late check-in available by arrangement</li>
+              </ul>
+            </Card>
+            
+            <Card className="p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <Users className="h-6 w-6 text-brand-secondary-500" />
+                <h3 className="text-xl font-semibold mb-4 text-brand-secondary-700">Guest Guidelines</h3>
+              </div>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li>• Maximum 2 guests per room</li>
+                <li>• No smoking inside the property</li>
+                <li>• Quiet hours: 10:00 PM - 8:00 AM</li>
+              </ul>
+            </Card>
+            
+            <Card className="p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <Shield className="h-6 w-6 text-brand-primary-500" />
+                <h3 className="text-xl font-semibold mb-4 text-brand-primary-700">Cancellation Policy</h3>
+              </div>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li>• Free cancellation up to 7 days before</li>
+                <li>• 50% refund for 3-7 days notice</li>
+                <li>• No refund for less than 3 days</li>
+              </ul>
+            </Card>
+            
+            <Card className="p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <MapPin className="h-6 w-6 text-brand-secondary-500" />
+                <h3 className="text-xl font-semibold mb-4 text-brand-secondary-700">What's Included</h3>
+              </div>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li>• Free WiFi</li>
+                <li>• Free parking</li>
+                <li>• Coffee & tea facilities</li>
+                <li>• Local recommendations</li>
+              </ul>
+            </Card>
           </div>
         </div>
       </section>

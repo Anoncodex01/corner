@@ -1,33 +1,64 @@
 "use client";
-import { Bell, User } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
+import { Bell, Settings, User, LogOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 
 export default function AdminTopbar() {
-  const router = useRouter();
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('isAdmin');
-      window.location.href = '/admin-login';
-    }
-  };
   return (
-    <div className="flex items-center justify-end w-full h-16 px-6 bg-white border-b shadow-sm">
-      <button className="relative p-2 rounded-full hover:bg-gray-100 transition-colors mr-4">
-        <Bell className="h-6 w-6 text-gray-500" />
-        {/* Notification dot (optional) */}
-        {/* <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span> */}
-      </button>
-      <button className="p-2 rounded-full hover:bg-gray-100 transition-colors mr-2">
-        <User className="h-6 w-6 text-gray-500" />
-      </button>
-      <button
-        onClick={handleLogout}
-        className="ml-2 px-3 py-1 rounded bg-terracotta-600 text-white text-sm font-medium hover:bg-terracotta-700 transition-colors"
-      >
-        Logout
-      </button>
+    <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
+      <div className="flex items-center space-x-4">
+        <h1 className="text-xl font-semibold text-gray-900">Dashboard</h1>
+        <Badge variant="secondary" className="bg-brand-primary-100 text-brand-primary-700">
+          Admin
+        </Badge>
+      </div>
+
+      <div className="flex items-center space-x-4">
+        {/* Notifications */}
+        <Button variant="ghost" size="sm" className="relative">
+          <Bell className="h-5 w-5" />
+          <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
+        </Button>
+
+        {/* User Menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="ml-2 px-3 py-1 rounded bg-brand-primary-600 text-white text-sm font-medium hover:bg-brand-primary-700 transition-colors"
+            >
+              <User className="h-4 w-4 mr-2" />
+              Admin
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <User className="h-4 w-4 mr-2" />
+              Profile
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-red-600">
+              <LogOut className="h-4 w-4 mr-2" />
+              Log out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   );
 } 

@@ -10,30 +10,30 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // The Corner House brand colors
-        terracotta: {
-          50: '#FDF6F0',
-          100: '#FAEDE0',
-          200: '#F5DBC1',
-          300: '#EDC29F',
-          400: '#E3A67D',
-          500: '#B5651D', // Primary terracotta
-          600: '#A0581A',
-          700: '#8B4B17',
-          800: '#763E14',
-          900: '#613211',
+        // The Corner House brand colors - Updated
+        'brand-primary': {
+          50: '#f0f4f3',
+          100: '#d9e4e1',
+          200: '#b3c9c3',
+          300: '#8daea5',
+          400: '#679387',
+          500: '#1d3e3c', // Primary color
+          600: '#1a3836',
+          700: '#172e2c',
+          800: '#142422',
+          900: '#111a18',
         },
-        ivy: {
-          50: '#F7F9F0',
-          100: '#EFF3E0',
-          200: '#DFE7C2',
-          300: '#CEDA9F',
-          400: '#BCCE7D',
-          500: '#6B8E23', // Primary ivy green
-          600: '#5F7F20',
-          700: '#53701C',
-          800: '#476019',
-          900: '#3B5015',
+        'brand-secondary': {
+          50: '#fdfbf0',
+          100: '#faf5d9',
+          200: '#f5ebb3',
+          300: '#f0e18d',
+          400: '#ebd767',
+          500: '#ceb04e', // Secondary color
+          600: '#b99e46',
+          700: '#a48c3e',
+          800: '#8f7a36',
+          900: '#7a682e',
         },
         // Enhanced shadcn color system
         background: 'hsl(var(--background))',
@@ -80,7 +80,7 @@ const config: Config = {
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-        'hero-pattern': "url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%23B5651D\" fill-opacity=\"0.05\"%3E%3Ccircle cx=\"30\" cy=\"30\" r=\"2\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')",
+        'hero-pattern': "url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%231d3e3c\" fill-opacity=\"0.05\"%3E%3Ccircle cx=\"30\" cy=\"30\" r=\"2\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')",
       },
       borderRadius: {
         lg: 'var(--radius)',

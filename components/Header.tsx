@@ -24,6 +24,15 @@ const navigation = [
   { name: 'Contact Us', href: '/contact', icon: Phone },
 ];
 
+const mobileNavigation = [
+  { name: 'Home', href: '/', icon: Home },
+  { name: 'About', href: '/about', icon: Info },
+  { name: 'Rooms', href: '/rooms', icon: Calendar },
+  { name: 'Food & Drink', href: '/food-drink', icon: Utensils },
+  { name: 'Add-ons', href: '/addons', icon: Plus },
+  { name: 'Contact', href: '/contact', icon: Phone },
+];
+
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
@@ -49,14 +58,14 @@ export default function Header() {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-3 group">
-            <div className="w-12 h-12 bg-gradient-to-br from-terracotta-500 to-ivy-500 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:rounded-lg group-hover:scale-105">
+            <div className="w-12 h-12 bg-gradient-to-br from-brand-primary-500 to-brand-secondary-500 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:rounded-lg group-hover:scale-105">
               <Home className="h-6 w-6 text-white" />
             </div>
             <div className="hidden sm:block">
-              <h1 className="text-2xl font-bold font-playfair text-terracotta-800 transition-colors group-hover:text-terracotta-600">
+              <h1 className="text-2xl font-bold font-playfair text-brand-primary-800 transition-colors group-hover:text-brand-primary-600">
                 The Corner House
               </h1>
-              <p className="text-xs text-ivy-700 -mt-1 font-medium">Braunston, Daventry</p>
+              <p className="text-xs text-brand-secondary-700 -mt-1 font-medium">Braunston, Daventry</p>
             </div>
           </Link>
 
@@ -70,8 +79,8 @@ export default function Header() {
                   href={item.href}
                   className={`px-4 py-2 rounded-full font-medium text-sm transition-all duration-200 ${
                     isActive
-                      ? 'bg-terracotta-500 text-white shadow'
-                      : 'text-gray-600 hover:text-terracotta-700 hover:bg-terracotta-50'
+                      ? 'bg-brand-primary-500 text-white shadow'
+                      : 'text-gray-600 hover:text-brand-primary-700 hover:bg-brand-primary-50'
                   }`}
                 >
                   {item.name}
@@ -101,11 +110,11 @@ export default function Header() {
                 <SheetHeader>
                   <SheetTitle asChild>
                     <Link href="/" className="flex items-center space-x-3 group">
-                  <div className="w-10 h-10 bg-gradient-to-br from-terracotta-500 to-ivy-500 rounded-lg flex items-center justify-center">
+                  <div className="w-10 h-10 bg-gradient-to-br from-brand-primary-500 to-brand-secondary-500 rounded-lg flex items-center justify-center">
                     <Home className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold font-playfair text-terracotta-800">
+                    <h2 className="text-lg font-bold font-playfair text-brand-primary-800">
                       The Corner House
                     </h2>
                   </div>
@@ -114,17 +123,17 @@ export default function Header() {
                 </SheetHeader>
                 
                 <nav className="mt-8 flex flex-col space-y-2">
-                  {navigation.map((item) => (
+                  {mobileNavigation.map((item) => (
                     <SheetClose asChild key={item.name}>
                       <Link
                         href={item.href}
                         className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${
                           pathname === item.href
-                            ? 'bg-terracotta-100 text-terracotta-800'
-                            : 'text-gray-700 hover:bg-terracotta-50'
+                            ? 'bg-brand-primary-100 text-brand-primary-800'
+                            : 'text-gray-700 hover:bg-brand-primary-50'
                         }`}
                       >
-                        <item.icon className="h-5 w-5 text-terracotta-600" />
+                        <item.icon className="h-5 w-5 text-brand-primary-600" />
                         <span>{item.name}</span>
                       </Link>
                     </SheetClose>

@@ -1,4 +1,4 @@
- "use client";
+"use client";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -50,10 +50,10 @@ export default function AdminLogin() {
   if (!mounted || checkingAuth) return null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-terracotta-50 to-ivy-50">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-primary-50 to-brand-secondary-50">
       <Card className="w-full max-w-md shadow-2xl border-0 rounded-2xl">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center font-playfair text-terracotta-700 mb-2">Admin Login</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center font-playfair text-brand-primary-700 mb-2">Admin Login</CardTitle>
           <p className="text-center text-gray-500">Sign in to manage The Corner House</p>
         </CardHeader>
         <CardContent>
@@ -67,7 +67,7 @@ export default function AdminLogin() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                className="bg-gray-50 border-gray-200 focus:border-terracotta-500 focus:ring-terracotta-500"
+                className="bg-gray-50 border-gray-200 focus:border-brand-primary-500 focus:ring-brand-primary-500"
               />
             </div>
             <div>
@@ -79,7 +79,7 @@ export default function AdminLogin() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
-                className="bg-gray-50 border-gray-200 focus:border-terracotta-500 focus:ring-terracotta-500"
+                className="bg-gray-50 border-gray-200 focus:border-brand-primary-500 focus:ring-brand-primary-500"
               />
             </div>
             {error && <div className="text-red-600 text-sm text-center">{error}</div>}

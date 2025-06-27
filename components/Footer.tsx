@@ -10,12 +10,12 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-1">
             <Link href="/" className="flex items-center space-x-3 mb-4 group">
-              <div className="w-12 h-12 bg-gradient-to-br from-terracotta-500 to-ivy-500 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:rounded-lg group-hover:scale-105">
+              <div className="w-12 h-12 bg-gradient-to-br from-brand-primary-500 to-brand-secondary-500 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:rounded-lg group-hover:scale-105">
                 <Home className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h3 className="text-xl font-bold font-playfair text-terracotta-800">The Corner House</h3>
-                <p className="text-sm text-ivy-700 -mt-1 font-medium">Braunston, Daventry</p>
+                <h3 className="text-xl font-bold font-playfair text-brand-primary-800">The Corner House</h3>
+                <p className="text-sm text-brand-secondary-700 -mt-1 font-medium">Braunston, Daventry</p>
               </div>
             </Link>
             <p className="text-gray-600 mb-6 text-sm">
@@ -26,7 +26,7 @@ export default function Footer() {
                 <a 
                   key={index} 
                   href="#" 
-                  className="w-9 h-9 flex items-center justify-center bg-terracotta-100/80 text-terracotta-600 rounded-full transition-all duration-300 hover:bg-terracotta-500 hover:text-white hover:scale-110"
+                  className="w-9 h-9 flex items-center justify-center bg-brand-primary-100/80 text-brand-primary-600 rounded-full transition-all duration-300 hover:bg-brand-primary-500 hover:text-white hover:scale-110"
                 >
                   <Icon className="h-4 w-4" />
               </a>
@@ -36,66 +36,98 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h4 className="font-playfair text-lg font-semibold mb-4 text-terracotta-800">Quick Links</h4>
-            <ul className="space-y-3">
-              {['Home', 'About Us', 'Make a Booking', 'Add-ons', 'Food & Drink', 'Places of Interest'].map((item, index) => (
-                <li key={index}>
-                  <Link 
-                    href={`/${item.toLowerCase().replace(' ', '-')}`} 
-                    className="text-gray-600 hover:text-terracotta-700 hover:underline underline-offset-4 transition-colors"
-                  >
-                    {item}
+            <h3 className="font-semibold text-gray-800 mb-4">Quick Links</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link href="/about" className="text-gray-600 hover:text-brand-primary-600 transition-colors">
+                  About Us
                 </Link>
               </li>
-              ))}
+              <li>
+                <Link href="/rooms" className="text-gray-600 hover:text-brand-primary-600 transition-colors">
+                  Our Rooms
+                </Link>
+              </li>
+              <li>
+                <Link href="/food-drink" className="text-gray-600 hover:text-brand-primary-600 transition-colors">
+                  Food & Drink
+                </Link>
+              </li>
+              <li>
+                <Link href="/addons" className="text-gray-600 hover:text-brand-primary-600 transition-colors">
+                  Add-ons
+                </Link>
+              </li>
+              <li>
+                <Link href="/contact" className="text-gray-600 hover:text-brand-primary-600 transition-colors">
+                  Contact
+                </Link>
+              </li>
             </ul>
           </div>
 
           {/* Contact Info */}
           <div>
-            <h4 className="font-playfair text-lg font-semibold mb-4 text-terracotta-800">Contact</h4>
-            <ul className="space-y-4 text-sm">
-              <li className="flex items-start space-x-3">
-                <MapPin className="h-4 w-4 text-terracotta-600 flex-shrink-0 mt-1" />
-                <span className="text-gray-600">Braunston, Daventry,<br />Northamptonshire</span>
-              </li>
-              <li className="flex items-center space-x-3">
-                <Phone className="h-4 w-4 text-terracotta-600 flex-shrink-0" />
-                <a href="tel:+4401788890123" className="text-gray-600 hover:text-terracotta-700 transition-colors">+44 (0) 1788 890 123</a>
-              </li>
-              <li className="flex items-center space-x-3">
-                <Mail className="h-4 w-4 text-terracotta-600 flex-shrink-0" />
-                <a href="mailto:hello@cornerhouse-braunston.com" className="text-gray-600 hover:text-terracotta-700 transition-colors">hello@cornerhouse-braunston.com</a>
-              </li>
-            </ul>
+            <h3 className="font-semibold text-gray-800 mb-4">Contact Info</h3>
+            <div className="space-y-3">
+              <div className="flex items-start space-x-3">
+                <MapPin className="h-4 w-4 text-brand-primary-500 mt-0.5" />
+                <div>
+                  <p className="text-gray-600 text-sm">Braunston, Daventry</p>
+                  <p className="text-gray-600 text-sm">Northamptonshire, UK</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Phone className="h-4 w-4 text-brand-primary-500" />
+                <a href="tel:+441788890123" className="text-gray-600 hover:text-brand-primary-600 transition-colors text-sm">
+                  +44 (0) 1788 890 123
+                </a>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Mail className="h-4 w-4 text-brand-primary-500" />
+                <a href="mailto:hello@cornerhouse-braunston.com" className="text-gray-600 hover:text-brand-primary-600 transition-colors text-sm">
+                  hello@cornerhouse-braunston.com
+                </a>
+              </div>
+            </div>
           </div>
 
-          {/* Booking */}
+          {/* Newsletter */}
           <div>
-            <h4 className="font-playfair text-lg font-semibold mb-4 text-terracotta-800">Book Your Stay</h4>
-            <p className="text-gray-600 mb-4 text-sm">
-              Ready to experience luxury accommodation in Braunston?
+            <h3 className="font-semibold text-gray-800 mb-4">Stay Updated</h3>
+            <p className="text-gray-600 text-sm mb-4">
+              Subscribe to our newsletter for special offers and updates.
             </p>
-            <Button asChild className="btn-primary rounded-full shadow-md hover:shadow-lg transition-shadow">
-              <Link href="/booking">
-                <Calendar className="mr-2 h-4 w-4" />
-              <span>Check Availability</span>
-            </Link>
-            </Button>
+            <div className="flex space-x-2">
+              <input
+                type="email"
+                placeholder="Your email"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary-500 focus:border-transparent"
+              />
+              <Button size="sm" className="bg-brand-primary-600 hover:bg-brand-primary-700">
+                Subscribe
+              </Button>
+            </div>
           </div>
         </div>
 
-        <div className="border-t border-terracotta-100 mt-12 pt-8 flex flex-col sm:flex-row justify-between items-center">
-          <p className="text-gray-500 text-sm">
-            © {new Date().getFullYear()} The Corner House. All rights reserved.
-          </p>
-          <div className="flex space-x-6 mt-4 sm:mt-0">
-            <Link href="/privacy" className="text-gray-500 hover:text-terracotta-700 text-sm transition-colors">
-              Privacy Policy
-            </Link>
-            <Link href="/terms" className="text-gray-500 hover:text-terracotta-700 text-sm transition-colors">
-              Terms of Service
-            </Link>
+        {/* Bottom Bar */}
+        <div className="border-t border-gray-200 mt-12 pt-8">
+          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+            <p className="text-gray-600 text-sm">
+              © 2024 The Corner House. All rights reserved.
+            </p>
+            <div className="flex space-x-6 text-sm">
+              <Link href="/privacy" className="text-gray-600 hover:text-brand-primary-600 transition-colors">
+                Privacy Policy
+              </Link>
+              <Link href="/terms" className="text-gray-600 hover:text-brand-primary-600 transition-colors">
+                Terms of Service
+              </Link>
+              <Link href="/cookies" className="text-gray-600 hover:text-brand-primary-600 transition-colors">
+                Cookie Policy
+              </Link>
+            </div>
           </div>
         </div>
       </div>
