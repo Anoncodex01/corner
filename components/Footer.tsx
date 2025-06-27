@@ -10,12 +10,8 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-1">
             <Link href="/" className="flex items-center space-x-3 mb-4 group">
-              <div className="w-12 h-12 bg-gradient-to-br from-brand-primary-500 to-brand-secondary-500 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:rounded-lg group-hover:scale-105">
-                <Home className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold font-playfair text-brand-primary-800">The Corner House</h3>
-                <p className="text-sm text-brand-secondary-700 -mt-1 font-medium">Braunston, Daventry</p>
+              <div className="w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center bg-white">
+                <img src="https://l.icdbcdn.com/oh/ae2c3d70-aade-4076-96e7-f8fe48bb6611.png?w=400" alt="Logo" className="object-contain w-12 h-12" />
               </div>
             </Link>
             <p className="text-gray-600 mb-6 text-sm">
