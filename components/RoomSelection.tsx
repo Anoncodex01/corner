@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Users, Bed, Bath, Wifi, Tv, Coffee, Star, Check } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
+import { toast } from 'sonner';
 
 interface Room {
   id: string;
@@ -20,6 +22,7 @@ interface Room {
   images: string[];
   features: string[];
   is_active: boolean;
+  property_id: string;
 }
 
 interface RoomSelectionProps {
@@ -27,6 +30,8 @@ interface RoomSelectionProps {
     bookingType: string;
     selectedRooms: string[];
     guests: number;
+    checkIn: string;
+    checkOut: string;
   };
   updateBookingData: (updates: any) => void;
   rooms: Room[];
@@ -41,6 +46,62 @@ const animalThemes = [
 ];
 
 export default function RoomSelection({ bookingData, updateBookingData, rooms }: RoomSelectionProps) {
+  const [unavailableRoomIds, setUnavailableRoomIds] = useState<string[]>([]);
+  const [wholePropertyUnavailable, setWholePropertyUnavailable] = useState(false);
+
+  useEffect(() => {
+    async function fetchUnavailableRooms() {
+      let propertyId = rooms[0]?.property_id || null;
+      const checkIn = bookingData.checkIn ? new Date(bookingData.checkIn).toISOString().slice(0, 10) : '';
+      const checkOut = bookingData.checkOut ? new Date(bookingData.checkOut).toISOString().slice(0, 10) : '';
+      if (!propertyId || !checkIn || !checkOut) {
+        setUnavailableRoomIds([]);
+        setWholePropertyUnavailable(false);
+        return;
+      }
+      const { data: bookings, error } = await supabase
+        .from('bookings')
+        .select('room_ids, is_whole_property, check_in, check_out')
+        .eq('property_id', propertyId)
+        .or('status.eq.confirmed,status.eq.pending');
+      if (error) {
+        setUnavailableRoomIds([]);
+        setWholePropertyUnavailable(false);
+        return;
+      }
+      let unavailable: string[] = [];
+      let wholeUnavailable = false;
+      const selectedCheckIn = new Date(checkIn);
+      const selectedCheckOut = new Date(checkOut);
+      for (const b of bookings || []) {
+        const bCheckIn = new Date(b.check_in);
+        const bCheckOut = new Date(b.check_out);
+        // Use the same overlap logic as backend
+        const overlaps = bCheckIn <= selectedCheckOut && bCheckOut >= selectedCheckIn;
+        if (overlaps) {
+          if (b.is_whole_property) {
+            wholeUnavailable = true;
+            break;
+          }
+          let ids: string[] = [];
+          if (Array.isArray(b.room_ids)) {
+            ids = b.room_ids;
+          } else if (typeof b.room_ids === 'string') {
+            try {
+              ids = JSON.parse(b.room_ids);
+            } catch {
+              ids = b.room_ids.replace(/[{}\"]+/g, '').split(',').map(s => s.trim()).filter(Boolean);
+            }
+          }
+          unavailable.push(...ids);
+        }
+      }
+      setUnavailableRoomIds(Array.from(new Set(unavailable)));
+      setWholePropertyUnavailable(wholeUnavailable);
+    }
+    fetchUnavailableRooms();
+  }, [bookingData.checkIn, bookingData.checkOut, rooms]);
+
   const handleBookingTypeChange = (value: string) => {
     updateBookingData({
       bookingType: value,
@@ -49,10 +110,14 @@ export default function RoomSelection({ bookingData, updateBookingData, rooms }:
   };
 
   const handleRoomSelection = (roomId: string, checked: boolean) => {
+    const isUnavailable = wholePropertyUnavailable || unavailableRoomIds.includes(roomId);
+    if (isUnavailable && checked) {
+      toast.warning('This room is unavailable for the selected dates.');
+      return;
+    }
     const updatedRooms = checked
       ? [...bookingData.selectedRooms, roomId]
       : bookingData.selectedRooms.filter(id => id !== roomId);
-    
     updateBookingData({
       selectedRooms: updatedRooms,
     });
@@ -68,13 +133,21 @@ export default function RoomSelection({ bookingData, updateBookingData, rooms }:
     }, 0);
   };
 
+  const getNights = () => {
+    const checkIn = bookingData.checkIn ? new Date(bookingData.checkIn) : null;
+    const checkOut = bookingData.checkOut ? new Date(bookingData.checkOut) : null;
+    if (!checkIn || !checkOut) return 0;
+    const diff = checkOut.getTime() - checkIn.getTime();
+    return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  };
+
   const getTotalPrice = () => {
     if (bookingData.bookingType === 'house') {
-      return 400; // Special whole house price
+      return 400 * getNights(); // £400 per night times number of nights
     }
     return bookingData.selectedRooms.reduce((total, roomId) => {
       const room = rooms.find(r => r.id === roomId);
-      return total + (room?.base_price || 0);
+      return total + (room?.base_price || 0) * getNights();
     }, 0);
   };
 
@@ -105,8 +178,8 @@ export default function RoomSelection({ bookingData, updateBookingData, rooms }:
             </Label>
           </div>
           <div className="flex items-center space-x-2 p-4 border rounded-lg">
-            <RadioGroupItem value="house" id="house" />
-            <Label htmlFor="house" className="flex-1 cursor-pointer">
+            <RadioGroupItem value="house" id="house" disabled={unavailableRoomIds.length > 0} title={unavailableRoomIds.length > 0 ? 'Cannot book entire house unless all rooms are available' : ''} />
+            <Label htmlFor="house" className={`flex-1 cursor-pointer ${unavailableRoomIds.length > 0 ? 'opacity-50 cursor-not-allowed' : ''}`}> 
               <div>
                 <h3 className="font-semibold">Entire House</h3>
                 <p className="text-sm text-gray-600">Book all {activeRooms.length} rooms (£400/night)</p>
@@ -120,11 +193,17 @@ export default function RoomSelection({ bookingData, updateBookingData, rooms }:
       {bookingData.bookingType === 'room' && (
         <div className="space-y-4">
           <Label className="text-lg font-semibold">Select Your Rooms</Label>
+          {activeRooms.length === 0 || activeRooms.every(room => wholePropertyUnavailable || unavailableRoomIds.includes(room.id)) ? (
+            <div className="p-4 bg-red-50 border border-red-200 rounded text-red-700 font-semibold text-center">
+              No rooms are available for the selected dates.
+            </div>
+          ) : null}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {activeRooms.map((room) => {
               const theme = getAnimalTheme(room.name);
+              const isUnavailable = wholePropertyUnavailable || unavailableRoomIds.includes(room.id);
               return (
-                <Card key={room.id} className={`overflow-hidden ${bookingData.selectedRooms.includes(room.id) ? 'ring-2 ring-terracotta-500' : ''}`}>
+                <Card key={room.id} className={`overflow-hidden ${bookingData.selectedRooms.includes(room.id) ? 'ring-2 ring-terracotta-500' : ''}`}> 
                   <div className="relative">
                     <div className="aspect-[4/3] overflow-hidden">
                       {room.images && room.images.length > 0 ? (
@@ -159,6 +238,7 @@ export default function RoomSelection({ bookingData, updateBookingData, rooms }:
                         checked={bookingData.selectedRooms.includes(room.id)}
                         onCheckedChange={(checked) => handleRoomSelection(room.id, checked as boolean)}
                         className="ml-2"
+                        disabled={isUnavailable}
                       />
                     </div>
                     
@@ -199,8 +279,8 @@ export default function RoomSelection({ bookingData, updateBookingData, rooms }:
                         ))}
                         <span className="text-xs text-gray-600 ml-1">5.0</span>
                       </div>
-                      <span className="text-sm font-semibold text-green-600">
-                        Available
+                      <span className={`text-sm font-semibold ${isUnavailable ? 'text-red-600' : 'text-green-600'}`}>
+                        {isUnavailable ? 'Unavailable' : 'Available'}
                       </span>
                     </div>
                   </CardContent>
@@ -259,6 +339,10 @@ export default function RoomSelection({ bookingData, updateBookingData, rooms }:
                     <div className="flex items-center justify-between font-semibold text-lg text-terracotta-600">
                       <span>Special Rate</span>
                       <span>£400/night</span>
+                    </div>
+                    <div className="flex items-center justify-between font-semibold text-lg mt-2">
+                      <span>Total Price</span>
+                      <span>£{getTotalPrice()}</span>
                     </div>
                   </div>
                 </div>

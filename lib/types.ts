@@ -67,7 +67,7 @@ export interface Booking {
   addOns: string[];
   basePrice: number;
   totalPrice: number;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'blocked';
   paymentStatus: 'pending' | 'paid' | 'refunded';
   source: 'direct' | 'airbnb' | 'booking.com' | 'vrbo';
   createdAt: Date;

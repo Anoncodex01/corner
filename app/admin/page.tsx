@@ -7,6 +7,8 @@ import { bookingService } from '@/lib/booking-service';
 import { Booking, Property } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import { calendarService } from '@/lib/calendar-service';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -22,6 +24,9 @@ export default function AdminDashboard() {
     occupancyRate: 0,
     avgBookingValue: 0,
   });
+  const [recentBookings, setRecentBookings] = useState<any[]>([]);
+  const [rooms, setRooms] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -38,23 +43,42 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    const allBookings = bookingService.getBookings();
-    const allProperties = bookingService.getProperties();
-    setBookings(allBookings);
-    setProperties(allProperties);
-    // Calculate stats
-    const confirmedBookings = allBookings.filter(b => b.status === 'confirmed');
-    const pendingBookings = allBookings.filter(b => b.status === 'pending');
-    const totalRevenue = confirmedBookings.reduce((sum, b) => sum + b.totalPrice, 0);
-    const avgBookingValue = confirmedBookings.length > 0 ? totalRevenue / confirmedBookings.length : 0;
-    setStats({
-      totalBookings: allBookings.length,
-      confirmedBookings: confirmedBookings.length,
-      pendingBookings: pendingBookings.length,
-      totalRevenue,
-      occupancyRate: 75, // Mock calculation
-      avgBookingValue,
-    });
+    setLoading(true);
+    async function fetchStats() {
+      // Get stats for current month
+      const now = new Date();
+      const monthStats = await calendarService.getMonthStats(now.getFullYear(), now.getMonth() + 1);
+      setStats({
+        totalBookings: monthStats.totalBookings,
+        confirmedBookings: monthStats.confirmedBookings,
+        pendingBookings: monthStats.pendingBookings,
+        totalRevenue: monthStats.totalRevenue,
+        occupancyRate: Math.round((monthStats.occupancyRate || 0) * 100),
+        avgBookingValue: monthStats.avgBookingValue,
+      });
+      // Optionally, fetch all bookings/properties as before
+      const allBookings = bookingService.getBookings();
+      setBookings(allBookings);
+      setProperties(bookingService.getProperties());
+      setLoading(false);
+    }
+    fetchStats();
+    // Fetch 5 most recent bookings
+    async function fetchRecent() {
+      const { data } = await supabase
+        .from('bookings')
+        .select('*')
+        .order('check_in', { ascending: false })
+        .limit(5);
+      setRecentBookings(data || []);
+    }
+    fetchRecent();
+    // Fetch all rooms for mapping room_ids to names
+    async function fetchRooms() {
+      const { data } = await supabase.from('rooms').select('id, name');
+      setRooms(data || []);
+    }
+    fetchRooms();
   }, [isAuthenticated]);
 
   if (checkingAuth) {
@@ -62,6 +86,20 @@ export default function AdminDashboard() {
   }
   if (!isAuthenticated) {
     return null;
+  }
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-1/3 mb-4" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-32 w-full" />
+          ))}
+        </div>
+        <Skeleton className="h-10 w-1/4 mt-8 mb-2" />
+        <Skeleton className="h-40 w-full" />
+      </div>
+    );
   }
 
   const getStatusColor = (status: string) => {
@@ -71,6 +109,16 @@ export default function AdminDashboard() {
       case 'cancelled': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  // Helper to get room names from room_ids
+  const getRoomNames = (roomIds: string[]) => {
+    if (!Array.isArray(roomIds) || rooms.length === 0) return 'N/A';
+    const names = roomIds.map(id => {
+      const room = rooms.find((r: any) => r.id === id);
+      return room ? room.name : id;
+    });
+    return names.join(', ');
   };
 
   return (
@@ -141,40 +189,29 @@ export default function AdminDashboard() {
           <CardTitle>Recent Bookings</CardTitle>
         </CardHeader>
         <CardContent>
-          {bookings.length === 0 ? (
+          {recentBookings.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No bookings yet</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {bookings.slice(0, 5).map((booking) => (
-                <div key={booking.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3">
-                      <div>
-                        <p className="font-medium">{booking.guestInfo.firstName} {booking.guestInfo.lastName}</p>
-                        <p className="text-sm text-gray-600">{booking.guestInfo.email}</p>
-                      </div>
-                    </div>
-                    <div className="mt-2 flex items-center space-x-4 text-sm text-gray-600">
-                      <span>{booking.checkIn.toLocaleDateString()} - {booking.checkOut.toLocaleDateString()}</span>
-                      <span>{booking.guests} guests</span>
-                      <span>{booking.isWholeProperty ? 'Whole Property' : `${booking.roomIds.length} room(s)`}</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <Badge className={getStatusColor(booking.status)}>
-                      {booking.status}
-                    </Badge>
-                    <p className="text-lg font-semibold mt-1">£{booking.totalPrice.toFixed(2)}</p>
-                  </div>
-                </div>
+            <ul className="divide-y">
+              {recentBookings.map(b => (
+                <li key={b.id} className="py-2 flex justify-between items-center">
+                  <span>{b.guest_info?.firstName} {b.guest_info?.lastName}</span>
+                  <span>{b.check_in} - {b.check_out}</span>
+                  <span>{b.is_whole_property ? 'Whole House' : getRoomNames(b.room_ids)}</span>
+                  <span>£{b.total_price}</span>
+                  <span>{b.status}</span>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </CardContent>
       </Card>
+
+      {/* Analytics Section */}
+      
     </div>
   );
 }

@@ -13,6 +13,7 @@ import { bookingService } from '@/lib/booking-service';
 import { Property } from '@/lib/types';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabaseClient';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PropertiesPage() {
   const [properties, setProperties] = useState<Property[]>([]);
@@ -106,6 +107,17 @@ export default function PropertiesPage() {
   };
 
   const getRoomCount = () => 0;
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-1/3 mb-4" />
+        {[...Array(4)].map((_, i) => (
+          <Skeleton key={i} className="h-32 w-full mb-2" />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

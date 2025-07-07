@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { Plus, Edit, Eye, Tag, DollarSign, Package, Star, Upload, X } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { toast } from 'sonner';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Addon {
   id: string;
@@ -62,9 +63,11 @@ export default function AddonsPage() {
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchAddons();
+    setLoading(true);
+    fetchAddons().finally(() => setLoading(false));
   }, []);
 
   const fetchAddons = async () => {
@@ -316,6 +319,17 @@ export default function AddonsPage() {
         return 'bg-gray-100 text-gray-800';
     }
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-1/3 mb-4" />
+        {[...Array(4)].map((_, i) => (
+          <Skeleton key={i} className="h-32 w-full mb-2" />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

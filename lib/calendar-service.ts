@@ -116,34 +116,57 @@ class CalendarService {
   async generateCalendarDays(year: number, month: number): Promise<CalendarDay[]> {
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0);
-    
     // Get first day of month and adjust for week start (Monday = 1)
     const firstDay = new Date(year, month - 1, 1);
     const lastDay = new Date(year, month, 0);
     const calendarStart = new Date(firstDay);
     calendarStart.setDate(calendarStart.getDate() - ((firstDay.getDay() + 6) % 7));
-    
     const calendarEnd = new Date(lastDay);
     calendarEnd.setDate(calendarEnd.getDate() + (7 - ((lastDay.getDay() + 6) % 7)));
 
     // Fetch bookings for the calendar period
     const bookings = await this.getBookings(calendarStart, calendarEnd);
-    
+    // Fetch all rooms for the property (assume all bookings are for the same property)
+    let totalRooms = 5; // fallback
+    if (bookings.length > 0) {
+      const propertyId = bookings[0].propertyId;
+      const { data: roomsData, error: roomsError } = await supabase
+        .from('rooms')
+        .select('id')
+        .eq('property_id', propertyId);
+      if (!roomsError && roomsData) {
+        totalRooms = roomsData.length;
+      }
+    }
     const days: CalendarDay[] = [];
     const current = new Date(calendarStart);
-    
     // Generate calendar days
     while (current <= calendarEnd) {
       const dayBookings = bookings.filter(booking => {
         return current >= booking.checkIn && current < booking.checkOut;
       });
-
+      // Calculate total booked rooms for the day
+      let bookedRoomIds = new Set<string>();
+      for (const booking of dayBookings) {
+        if (booking.isWholeProperty) {
+          // If whole property is booked, all rooms are booked
+          bookedRoomIds = new Set();
+          for (let i = 0; i < totalRooms; i++) bookedRoomIds.add(`room${i}`); // placeholder, will be replaced below
+          break;
+        }
+        for (const id of booking.roomIds) {
+          bookedRoomIds.add(id);
+        }
+      }
+      // If any booking isWholeProperty, set occupancy to 100%
+      let occupancyRate = 0;
+      if (dayBookings.some(b => b.isWholeProperty)) {
+        occupancyRate = 1;
+      } else {
+        occupancyRate = totalRooms > 0 ? bookedRoomIds.size / totalRooms : 0;
+      }
       const isWeekend = current.getDay() === 0 || current.getDay() === 6;
       const isHoliday = this.isHoliday(current);
-      
-      // Calculate occupancy rate (simplified - could be enhanced)
-      const occupancyRate = Math.min(dayBookings.length / 5, 1); // Assuming max 5 rooms
-
       days.push({
         date: new Date(current),
         bookings: dayBookings,
@@ -153,25 +176,23 @@ class CalendarService {
         isHoliday,
         occupancyRate,
       });
-      
       current.setDate(current.getDate() + 1);
     }
-    
     return days;
   }
 
   // Get calendar statistics
   async getCalendarStats(startDate?: Date, endDate?: Date): Promise<CalendarStats> {
     try {
-      let query = supabase.rpc('get_booking_stats');
-      
+      let data, error;
       if (startDate && endDate) {
-        query = query.eq('p_start_date', startDate.toISOString().split('T')[0])
-                    .eq('p_end_date', endDate.toISOString().split('T')[0]);
+        const p_start_date = startDate.toISOString().split('T')[0];
+        const p_end_date = endDate.toISOString().split('T')[0];
+        ({ data, error } = await supabase.rpc('get_booking_stats', { p_start_date, p_end_date }));
+      } else {
+        ({ data, error } = await supabase.rpc('get_booking_stats'));
       }
-
-      const { data, error } = await query;
-
+      console.log('get_booking_stats raw response:', { data, error });
       if (error) {
         console.error('Error fetching calendar stats:', error);
         return {
@@ -184,9 +205,7 @@ class CalendarService {
           occupancyRate: 0,
         };
       }
-
       const stats = data?.[0] || {};
-      
       return {
         totalBookings: parseInt(stats.total_bookings) || 0,
         confirmedBookings: parseInt(stats.confirmed_bookings) || 0,

@@ -12,8 +12,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from '@/components/ui/switch';
 import { Bed, Plus, Edit, Eye, Users, Bath, Wifi, Tv, Coffee, Star } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
-import { Room, Property } from '@/lib/types';
+import { Room as BaseRoom, Property } from '@/lib/types';
 import { toast } from 'sonner';
+import { Skeleton } from '@/components/ui/skeleton';
+
+interface Room extends BaseRoom {
+  external_ical_urls?: string[];
+}
 
 const animalThemes = [
   { id: 'lion', name: 'Lion', color: 'from-yellow-500 to-orange-600', description: 'Majestic and royal' },
@@ -66,9 +71,13 @@ export default function RoomsPage() {
   });
   const [editImageFiles, setEditImageFiles] = useState<File[]>([]);
   const [editing, setEditing] = useState(false);
+  const [icalInputs, setIcalInputs] = useState<{ [roomId: string]: string }>({});
+  const [syncing, setSyncing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchRoomsAndProperties = async () => {
+      setLoading(true);
       const { data: propertiesData } = await supabase.from('properties').select('*');
       setProperties(propertiesData || []);
       const { data: roomsData } = await supabase.from('rooms').select('*');
@@ -82,6 +91,14 @@ export default function RoomsPage() {
           isActive: room.is_active,
         }))
       );
+      // Initialize icalInputs for each room
+      setIcalInputs(
+        (roomsData || []).reduce((acc, room) => {
+          acc[room.id] = '';
+          return acc;
+        }, {} as { [roomId: string]: string })
+      );
+      setLoading(false);
     };
     fetchRoomsAndProperties();
   }, []);
@@ -191,11 +208,57 @@ export default function RoomsPage() {
     }
   };
 
+  // Helper to update external iCal URLs for a room
+  const updateRoomIcalUrls = async (roomId: string, urls: string[]) => {
+    await supabase.from('rooms').update({ external_ical_urls: urls }).eq('id', roomId);
+    // Refetch rooms
+    const { data: roomsData } = await supabase.from('rooms').select('*');
+    setRooms(
+      (roomsData || []).map((room) => ({
+        ...room,
+        propertyId: room.property_id,
+        bedType: room.bed_type,
+        basePrice: room.base_price,
+        features: room.features || [],
+        isActive: room.is_active,
+      }))
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-1/3 mb-4" />
+        {[...Array(4)].map((_, i) => (
+          <Skeleton key={i} className="h-32 w-full mb-2" />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-3xl font-bold text-gray-900">Room Management</h1>
+        <Button onClick={async () => {
+          setSyncing(true);
+          try {
+            const res = await fetch('/api/manual-ical-sync', { method: 'POST' });
+            if (res.ok) {
+              toast.success('iCal sync complete!');
+            } else {
+              toast.error('iCal sync failed.');
+            }
+          } catch {
+            toast.error('iCal sync failed.');
+          }
+          setSyncing(false);
+        }} disabled={syncing} className="btn-primary">
+          {syncing ? 'Syncing...' : 'Sync iCal Now'}
+        </Button>
+      </div>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Room Management</h1>
           <p className="text-gray-600">Manage themed rooms and their configurations</p>
         </div>
         
@@ -452,6 +515,79 @@ export default function RoomsPage() {
                     <Badge variant="secondary" className="text-xs">
                       +{room.features.length - 3} more
                     </Badge>
+                  )}
+                </div>
+                
+                <div className="mb-2">
+                  <Label htmlFor={`ical-url-${room.id}`}>iCal Export URL</Label>
+                  <div className="flex items-center space-x-2 mt-1">
+                    <Input
+                      id={`ical-url-${room.id}`}
+                      value={`${window.location.origin}/api/ical/${room.id}`}
+                      readOnly
+                      className="w-full text-xs"
+                      onFocus={e => e.target.select()}
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/api/ical/${room.id}`);
+                        toast.success('iCal URL copied!');
+                      }}
+                    >
+                      Copy
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="mb-2">
+                  <Label htmlFor={`ical-import-${room.id}`}>Import External iCal URLs</Label>
+                  <div className="flex items-center space-x-2 mt-1">
+                    <Input
+                      id={`ical-import-${room.id}`}
+                      value={icalInputs[room.id] || ''}
+                      onChange={e => setIcalInputs(prev => ({ ...prev, [room.id]: e.target.value }))}
+                      placeholder="Paste external iCal URL (Airbnb, Booking.com, etc.)"
+                      className="w-full text-xs"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={async () => {
+                        const url = icalInputs[room.id]?.trim();
+                        if (!url) return;
+                        const current = Array.isArray(room.external_ical_urls) ? room.external_ical_urls : [];
+                        if (current.includes(url)) return;
+                        await updateRoomIcalUrls(room.id, [...current, url]);
+                        setIcalInputs(prev => ({ ...prev, [room.id]: '' }));
+                        toast.success('iCal URL added!');
+                      }}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                  {/* List of imported URLs */}
+                  {(room.external_ical_urls || []).length > 0 && (
+                    <ul className="mt-2 space-y-1 text-xs">
+                      {(room.external_ical_urls || []).map((url: string, idx: number) => (
+                        <li key={idx} className="flex items-center space-x-2">
+                          <span className="truncate w-64" title={url}>{url}</span>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="destructive"
+                            onClick={async () => {
+                              const filtered = (room.external_ical_urls || []).filter((u: string) => u !== url);
+                              await updateRoomIcalUrls(room.id, filtered);
+                              toast.success('iCal URL removed!');
+                            }}
+                          >
+                            Remove
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
                   )}
                 </div>
                 

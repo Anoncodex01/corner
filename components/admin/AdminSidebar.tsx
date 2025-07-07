@@ -15,6 +15,7 @@ import {
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: Home },
+  { name: 'Bookings', href: '/admin/bookings', icon: FileText },
   { name: 'Guests', href: '/admin/guests', icon: Users },
   { name: 'Rooms', href: '/admin/rooms', icon: Calendar },
   { name: 'Add-ons', href: '/admin/addons', icon: Package },

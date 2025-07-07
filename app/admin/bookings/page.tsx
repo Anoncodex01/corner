@@ -11,6 +11,7 @@ import { Calendar, Search, Filter, Eye, Edit, X, Check } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { Booking } from '@/lib/types';
 import { toast } from 'sonner';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -18,21 +19,52 @@ export default function BookingsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [rooms, setRooms] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchBookings = async () => {
+      setLoading(true);
       const { data, error } = await supabase.from('bookings').select('*');
       if (error) {
         toast.error('Failed to load bookings');
         setBookings([]);
         setFilteredBookings([]);
       } else {
-        // Map fields if needed
-        setBookings(data || []);
-        setFilteredBookings(data || []);
+        // Map fields from snake_case to camelCase and ensure all fields are present
+        const mapped = (data || []).map((b: any) => ({
+          id: b.id,
+          guestInfo: b.guest_info || { firstName: '', lastName: '', email: '', phone: '', specialRequests: '' },
+          checkIn: b.check_in ? new Date(b.check_in) : new Date(),
+          checkOut: b.check_out ? new Date(b.check_out) : new Date(),
+          guests: b.guests ?? 1,
+          status: b.status || 'pending',
+          paymentStatus: b.payment_status || 'pending',
+          totalPrice: b.total_price ?? 0,
+          basePrice: b.base_price ?? 0,
+          isWholeProperty: b.is_whole_property ?? false,
+          roomIds: b.room_ids || [],
+          addOns: b.add_ons || [],
+          propertyId: b.property_id || '',
+          source: b.source || 'direct',
+          createdAt: b.created_at ? new Date(b.created_at) : new Date(),
+          updatedAt: b.updated_at ? new Date(b.updated_at) : new Date(),
+        }));
+        setBookings(mapped);
+        setFilteredBookings(mapped);
       }
+      setLoading(false);
     };
     fetchBookings();
+  }, []);
+
+  useEffect(() => {
+    // Fetch all rooms for mapping roomIds to names
+    const fetchRooms = async () => {
+      const { data, error } = await supabase.from('rooms').select('id, name');
+      if (!error && data) setRooms(data);
+    };
+    fetchRooms();
   }, []);
 
   useEffect(() => {
@@ -56,12 +88,22 @@ export default function BookingsPage() {
     setFilteredBookings(filtered);
   }, [bookings, searchTerm, statusFilter]);
 
+  // Helper to get room names from roomIds
+  const getRoomNames = (roomIds: string[]) => {
+    if (!Array.isArray(roomIds) || rooms.length === 0) return 'N/A';
+    const names = roomIds.map(id => {
+      const room = rooms.find(r => r.id === id);
+      return room ? room.name : id;
+    });
+    return names.join(', ');
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed': return 'bg-green-100 text-green-800';
       case 'pending': return 'bg-yellow-100 text-yellow-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
-      case 'completed': return 'bg-blue-100 text-blue-800';
+      case 'blocked': return 'bg-gray-300 text-gray-700 border border-gray-400';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -87,6 +129,18 @@ export default function BookingsPage() {
     setFilteredBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'cancelled' as Booking['status'] } : b));
       toast.success('Booking cancelled');
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-1/3 mb-4" />
+        <Skeleton className="h-16 w-full mb-4" />
+        {[...Array(5)].map((_, i) => (
+          <Skeleton key={i} className="h-20 w-full mb-2" />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -123,6 +177,7 @@ export default function BookingsPage() {
                 <SelectItem value="confirmed">Confirmed</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="blocked">Blocked</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -149,13 +204,15 @@ export default function BookingsPage() {
                       <div className="flex items-center space-x-4">
                         <div>
                           <h3 className="font-semibold text-gray-900">
-                            {(booking.guestInfo?.firstName || 'N/A')} {(booking.guestInfo?.lastName || '')}
+                            {booking.status === 'blocked' ? 'Blocked (external iCal)' : (booking.guestInfo?.firstName || 'N/A') + ' ' + (booking.guestInfo?.lastName || '')}
                           </h3>
-                          <p className="text-sm text-gray-600">{booking.guestInfo?.email || 'N/A'}</p>
+                          {booking.status !== 'blocked' && (
+                            <p className="text-sm text-gray-600">{booking.guestInfo?.email || 'N/A'}</p>
+                          )}
                           <p className="text-xs text-gray-500">ID: {booking.id}</p>
                         </div>
                         <Badge className={getStatusColor(booking.status)}>
-                          {booking.status}
+                          {booking.status === 'blocked' ? 'Blocked' : booking.status}
                         </Badge>
                       </div>
                       
@@ -180,14 +237,23 @@ export default function BookingsPage() {
                               : 'N/A'}
                           </p>
                         </div>
-                        <div>
-                          <span className="text-gray-500">Guests:</span>
-                          <p className="font-medium">{booking.guests}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Total:</span>
-                          <p className="font-medium">£{typeof booking.totalPrice === 'number' ? booking.totalPrice.toFixed(2) : '0.00'}</p>
-                        </div>
+                        {booking.status !== 'blocked' ? (
+                          <>
+                            <div>
+                              <span className="text-gray-500">Guests:</span>
+                              <p className="font-medium">{booking.guests}</p>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Total:</span>
+                              <p className="font-medium">£{typeof booking.totalPrice === 'number' ? booking.totalPrice.toFixed(2) : '0.00'}</p>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="col-span-2">
+                            <span className="text-gray-500">Source:</span>
+                            <p className="font-medium">Blocked by iCal</p>
+                          </div>
+                        )}
                       </div>
                       
                       <div className="mt-2">
@@ -195,7 +261,7 @@ export default function BookingsPage() {
                         <p className="text-sm">
                           {booking.isWholeProperty
                             ? 'Entire Property'
-                            : `Rooms: ${(Array.isArray(booking.roomIds) ? booking.roomIds.join(', ') : 'N/A')}`}
+                            : `Rooms: ${getRoomNames(booking.roomIds)}`}
                         </p>
                       </div>
                     </div>

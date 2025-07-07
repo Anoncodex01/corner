@@ -13,6 +13,7 @@ import { Search, MessageSquare, Send, Phone, Mail, User, Calendar, Star } from '
 import { bookingService } from '@/lib/booking-service';
 import { Booking } from '@/lib/types';
 import { toast } from 'sonner';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Message {
   id: string;
@@ -46,8 +47,10 @@ export default function GuestsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [newMessage, setNewMessage] = useState('');
   const [messageTemplate, setMessageTemplate] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     const allBookings = bookingService.getBookings();
     setBookings(allBookings);
     
@@ -102,6 +105,7 @@ export default function GuestsPage() {
         read: true,
       },
     ]);
+    setLoading(false);
   }, []);
 
   const filteredGuests = guests.filter(guest =>
@@ -172,6 +176,20 @@ export default function GuestsPage() {
     if (guest.totalBookings >= 3) return 'Returning Guest';
     return 'New Guest';
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-1/3 mb-4" />
+        <Skeleton className="h-12 w-1/2 mb-4" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-32 w-full mb-2" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

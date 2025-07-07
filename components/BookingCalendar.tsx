@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
 interface BookingData {
-  checkIn: Date | null;
-  checkOut: Date | null;
+  checkIn: string;
+  checkOut: string;
   guests: number;
   selectedRooms: string[];
   bookingType: string;
@@ -25,18 +25,18 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookingData, updateBo
     if (!date) return;
 
     if (!bookingData.checkIn || selectingCheckOut) {
-      if (selectingCheckOut && bookingData.checkIn && date > bookingData.checkIn) {
-        updateBookingData({ checkOut: date });
+      if (selectingCheckOut && bookingData.checkIn && date > new Date(bookingData.checkIn)) {
+        updateBookingData({ checkOut: date.toISOString() });
         setSelectingCheckOut(false);
       } else if (!selectingCheckOut) {
-        updateBookingData({ checkIn: date, checkOut: null });
+        updateBookingData({ checkIn: date.toISOString(), checkOut: null });
         setSelectingCheckOut(true);
       }
-    } else if (date > bookingData.checkIn) {
-      updateBookingData({ checkOut: date });
+    } else if (date > new Date(bookingData.checkIn)) {
+      updateBookingData({ checkOut: date.toISOString() });
       setSelectingCheckOut(false);
     } else {
-      updateBookingData({ checkIn: date, checkOut: null });
+      updateBookingData({ checkIn: date.toISOString(), checkOut: null });
       setSelectingCheckOut(true);
     }
   };
@@ -49,21 +49,22 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookingData, updateBo
 
   const isDateSelected = (date: Date) => {
     if (!bookingData.checkIn) return false;
-    
+    const checkInDate = new Date(bookingData.checkIn);
     const dateTime = date.getTime();
-    const checkInTime = bookingData.checkIn.getTime();
-    
+    const checkInTime = checkInDate.getTime();
     if (bookingData.checkOut) {
-      const checkOutTime = bookingData.checkOut.getTime();
+      const checkOutDate = new Date(bookingData.checkOut);
+      const checkOutTime = checkOutDate.getTime();
       return dateTime >= checkInTime && dateTime <= checkOutTime;
     }
-    
     return dateTime === checkInTime;
   };
 
   const calculateNights = () => {
     if (bookingData.checkIn && bookingData.checkOut) {
-      const diffTime = Math.abs(bookingData.checkOut.getTime() - bookingData.checkIn.getTime());
+      const checkInDate = new Date(bookingData.checkIn);
+      const checkOutDate = new Date(bookingData.checkOut);
+      const diffTime = Math.abs(checkOutDate.getTime() - checkInDate.getTime());
       return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     }
     return 0;
@@ -74,15 +75,19 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookingData, updateBo
     selected: isDateSelected,
     range_middle: (date: Date) => {
       if (!bookingData.checkIn || !bookingData.checkOut) return false;
+      const checkInDate = new Date(bookingData.checkIn);
+      const checkOutDate = new Date(bookingData.checkOut);
       const dateTime = date.getTime();
-      return dateTime > bookingData.checkIn.getTime() && dateTime < bookingData.checkOut.getTime();
+      return dateTime > checkInDate.getTime() && dateTime < checkOutDate.getTime();
     },
   };
   if (bookingData.checkIn) {
-    modifiers.range_start = (date: Date) => date.getTime() === bookingData.checkIn!.getTime();
+    const checkInDate = new Date(bookingData.checkIn);
+    modifiers.range_start = (date: Date) => date.getTime() === checkInDate.getTime();
   }
   if (bookingData.checkOut) {
-    modifiers.range_end = (date: Date) => date.getTime() === bookingData.checkOut!.getTime();
+    const checkOutDate = new Date(bookingData.checkOut);
+    modifiers.range_end = (date: Date) => date.getTime() === checkOutDate.getTime();
   }
 
   return (
@@ -92,12 +97,12 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookingData, updateBo
         <div className="flex flex-wrap gap-2">
           {bookingData.checkIn && (
             <Badge variant="outline" className="border-brand-primary text-brand-primary">
-              Check-in: {bookingData.checkIn.toLocaleDateString()}
+              Check-in: {new Date(bookingData.checkIn).toLocaleDateString()}
             </Badge>
           )}
           {bookingData.checkOut && (
             <Badge variant="outline" className="border-brand-secondary text-brand-secondary">
-              Check-out: {bookingData.checkOut.toLocaleDateString()}
+              Check-out: {new Date(bookingData.checkOut).toLocaleDateString()}
             </Badge>
           )}
           {calculateNights() > 0 && (
@@ -111,7 +116,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookingData, updateBo
         <div className="flex justify-center">
           <Calendar
             mode="single"
-            selected={bookingData.checkIn || undefined}
+            selected={bookingData.checkIn ? new Date(bookingData.checkIn) : undefined}
             onSelect={handleDateSelect}
             disabled={isDateDisabled}
             className="rounded-md border"
@@ -127,13 +132,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookingData, updateBo
         {selectingCheckOut && bookingData.checkIn && (
           <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
             <p className="text-sm text-amber-800">
-              Now select your check-out date (must be after {bookingData.checkIn.toLocaleDateString()})
+              Now select your check-out date (must be after {new Date(bookingData.checkIn).toLocaleDateString()})
             </p>
           </div>
         )}
 
         {bookingData.bookingType === 'house' && calculateNights() > 0 && calculateNights() < 2 && 
-         bookingData.checkIn && bookingData.checkIn.getDay() >= 5 && (
+         bookingData.checkIn && new Date(bookingData.checkIn).getDay() >= 5 && (
           <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-sm text-red-800">
               Weekend whole house bookings require a minimum of 2 nights.

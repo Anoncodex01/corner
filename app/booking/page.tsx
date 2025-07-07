@@ -18,6 +18,16 @@ import EnhancedAddons from '@/components/EnhancedAddons';
 import { format } from 'date-fns';
 import { supabase } from '@/lib/supabaseClient';
 
+// Update BookingData type for BookingCalendar usage
+// If imported, override locally for this file
+interface BookingDataForCalendar {
+  checkIn: string;
+  checkOut: string;
+  guests: number;
+  selectedRooms: string[];
+  bookingType: string;
+}
+
 function BookingContent() {
   const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
@@ -29,21 +39,25 @@ function BookingContent() {
     return isNaN(date.getTime()) ? null : date;
   };
 
-  const [bookingData, setBookingData] = useState({
-    checkIn: parseDate(searchParams.get('checkIn')),
-    checkOut: parseDate(searchParams.get('checkOut')),
-    guests: parseInt(searchParams.get('guests') || '2'),
-    bookingType: searchParams.get('type') || 'room',
-    selectedRooms: [] as string[],
-    guestInfo: {
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      specialRequests: '',
-    },
-    addOns: (searchParams.get('addons')?.split(',') || []).filter(Boolean),
-    totalPrice: 0,
+  const [bookingData, setBookingData] = useState(() => {
+    const typeParam = searchParams.get('type') || 'room';
+    // We'll check for room availability after rooms are loaded, but for now, default to 'room' if type is 'house'
+    return {
+      checkIn: parseDate(searchParams.get('checkIn')) ? parseDate(searchParams.get('checkIn'))!.toISOString() : '',
+      checkOut: parseDate(searchParams.get('checkOut')) ? parseDate(searchParams.get('checkOut'))!.toISOString() : '',
+      guests: parseInt(searchParams.get('guests') || '2'),
+      bookingType: typeParam,
+      selectedRooms: [] as string[],
+      guestInfo: {
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        specialRequests: '',
+      },
+      addOns: (searchParams.get('addons')?.split(',') || []).filter(Boolean),
+      totalPrice: 0,
+    };
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -56,6 +70,64 @@ function BookingContent() {
     supabase.from('addons').select('*').then(({ data }) => setAddons(data || []));
     supabase.from('price_rules').select('*').then(({ data }) => setPriceRules(data || []));
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      setStep(5);
+    }
+  }, [searchParams]);
+
+  // After rooms and unavailableRoomIds are loaded, if bookingType is 'house' but not all rooms are available, switch to 'room'
+  useEffect(() => {
+    if (
+      bookingData.bookingType === 'house' &&
+      rooms.length > 0 &&
+      typeof window !== 'undefined'
+    ) {
+      // Find unavailableRoomIds logic (same as in RoomSelection)
+      const propertyId = rooms[0]?.property_id || null;
+      const checkIn = bookingData.checkIn ? new Date(bookingData.checkIn).toISOString().slice(0, 10) : '';
+      const checkOut = bookingData.checkOut ? new Date(bookingData.checkOut).toISOString().slice(0, 10) : '';
+      if (propertyId && checkIn && checkOut) {
+        supabase
+          .from('bookings')
+          .select('room_ids, is_whole_property, check_in, check_out')
+          .eq('property_id', propertyId)
+          .or('status.eq.confirmed,status.eq.pending')
+          .then(({ data: bookings }) => {
+            let unavailable: string[] = [];
+            const selectedCheckIn = new Date(checkIn);
+            const selectedCheckOut = new Date(checkOut);
+            for (const b of bookings || []) {
+              const bCheckIn = new Date(b.check_in);
+              const bCheckOut = new Date(b.check_out);
+              const overlaps = bCheckIn <= selectedCheckOut && bCheckOut >= selectedCheckIn;
+              if (overlaps) {
+                let ids: string[] = [];
+                if (Array.isArray(b.room_ids)) {
+                  ids = b.room_ids;
+                } else if (typeof b.room_ids === 'string') {
+                  try {
+                    ids = JSON.parse(b.room_ids);
+                  } catch {
+                    ids = b.room_ids.replace(/[{}\"]+/g, '').split(',').map(s => s.trim()).filter(Boolean);
+                  }
+                }
+                const validRoomIds = ids.filter(id => rooms.some(r => r.id === id));
+                unavailable.push(...validRoomIds);
+              }
+            }
+            if (unavailable.length > 0) {
+              setBookingData(prev => ({ ...prev, bookingType: 'room' }));
+            }
+          });
+      }
+    }
+  }, [bookingData.checkIn, bookingData.checkOut, bookingData.bookingType, rooms]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [step]);
 
   const handleStepNext = () => {
     if (step === 1 && (!bookingData.checkIn || !bookingData.checkOut)) {
@@ -76,28 +148,38 @@ function BookingContent() {
   const handleBookingSubmit = async () => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.from('bookings').insert([
-        {
-          property_id: bookingData.selectedRooms.length > 0 ? bookingData.selectedRooms[0] : null, // or let user pick property
-          room_ids: bookingData.selectedRooms,
-          is_whole_property: bookingData.bookingType === 'house',
-          check_in: bookingData.checkIn ? bookingData.checkIn.toISOString().slice(0, 10) : null,
-          check_out: bookingData.checkOut ? bookingData.checkOut.toISOString().slice(0, 10) : null,
+      // Prepare selectedRooms and dates
+      let selectedRooms = bookingData.selectedRooms;
+      let propertyId = rooms.find(r => r.id === bookingData.selectedRooms[0])?.property_id || '';
+      if (bookingData.bookingType === 'house') {
+        // All room IDs for the property
+        const allRooms = rooms.filter(r => r.property_id === propertyId);
+        selectedRooms = allRooms.map(r => r.id);
+      }
+      const checkIn = bookingData.checkIn ? new Date(bookingData.checkIn).toISOString().slice(0, 10) : '';
+      const checkOut = bookingData.checkOut ? new Date(bookingData.checkOut).toISOString().slice(0, 10) : '';
+      const res = await fetch('/api/checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: bookingData.totalPrice * 100, // Stripe expects amount in pence
+          description: `Booking for ${bookingData.guestInfo.firstName} ${bookingData.guestInfo.lastName || ''}`.trim(),
+          guestInfo: bookingData.guestInfo,
+          bookingType: bookingData.bookingType,
+          checkIn,
+          checkOut,
+          selectedRooms,
+          addOns: bookingData.addOns,
           guests: bookingData.guests,
-          guest_info: bookingData.guestInfo,
-          add_ons: bookingData.addOns,
-          base_price: bookingData.totalPrice, // or calculate base separately
-          total_price: bookingData.totalPrice,
-          status: 'pending',
-          payment_status: 'pending',
-          source: 'direct',
-        }
-      ]);
-      if (error) {
-        toast.error('Booking failed. Please try again.');
+          totalPrice: bookingData.totalPrice,
+          propertyId,
+        }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
       } else {
-        toast.success('Booking confirmed! Check your email for details.');
-        setStep(5); // Success step
+        toast.error(data.error || 'Failed to start payment.');
       }
     } catch (error) {
       toast.error('Booking failed. Please try again.');
@@ -108,32 +190,39 @@ function BookingContent() {
 
   const updateBookingData = (updates: any) => {
     setBookingData(prev => {
-      const updated = { ...prev, ...updates };
-      
+      // Always store checkIn and checkOut as strings (or empty string)
+      let updated = { ...prev, ...updates };
+      if (updates.checkIn instanceof Date) {
+        updated.checkIn = updates.checkIn.toISOString();
+      } else if (updates.checkIn === null) {
+        updated.checkIn = '';
+      }
+      if (updates.checkOut instanceof Date) {
+        updated.checkOut = updates.checkOut.toISOString();
+      } else if (updates.checkOut === null) {
+        updated.checkOut = '';
+      }
       // Calculate total price based on selected rooms and add-ons
       let totalPrice = 0;
-      
+      // Parse dates for calculation
+      const checkInDate = updated.checkIn ? new Date(updated.checkIn) : null;
+      const checkOutDate = updated.checkOut ? new Date(updated.checkOut) : null;
+      const nights = checkInDate && checkOutDate 
+        ? Math.max(1, Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)))
+        : 1;
       if (updated.bookingType === 'house') {
-        // Special whole house price
-        totalPrice = 400;
+        // Special whole house price per night
+        totalPrice = 400 * nights;
       } else if (updated.selectedRooms.length > 0) {
         // Calculate based on selected rooms
         const selectedRoomData = rooms.filter(room => updated.selectedRooms.includes(room.id));
         const roomPrice = selectedRoomData.reduce((total, room) => total + room.base_price, 0);
-        
-        // Calculate nights
-        const nights = updated.checkIn && updated.checkOut 
-          ? Math.ceil((updated.checkOut.getTime() - updated.checkIn.getTime()) / (1000 * 60 * 60 * 24))
-          : 1;
-        
         totalPrice = roomPrice * nights;
       }
-      
       // Add add-on prices
       const selectedAddons = addons.filter(addon => updated.addOns.includes(addon.id));
-      const addonPrice = selectedAddons.reduce((total, addon) => total + getAddonPrice(addon, updated.checkIn), 0);
+      const addonPrice = selectedAddons.reduce((total, addon) => total + getAddonPrice(addon, checkInDate), 0);
       totalPrice += addonPrice;
-      
       return { ...updated, totalPrice };
     });
   };
@@ -178,29 +267,44 @@ function BookingContent() {
                 { step: 2, title: 'Rooms', icon: Users },
                 { step: 3, title: 'Details', icon: CreditCard },
                 { step: 4, title: 'Payment', icon: Shield },
-              ].map((item, index) => (
-                <div key={item.step} className="flex items-center w-full">
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 ${
-                    step >= item.step ? 'bg-terracotta-500 text-white shadow-md' : 'bg-gray-200 text-gray-500'
-                  }`}>
-                    {step > item.step ? (
-                      <Check className="h-5 w-5" />
-                    ) : (
-                      <item.icon className="h-5 w-5" />
+              ].map((item, index) => {
+                const isDone = step > item.step;
+                const isActive = step === item.step;
+                const isInactive = step < item.step;
+                return (
+                  <div key={item.step} className="flex items-center w-full">
+                    <div
+                      className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300
+                        ${isDone ? 'bg-brand-primary-500 text-white shadow-md' :
+                          isActive ? 'bg-brand-primary-100 text-brand-primary-700 ring-2 ring-brand-primary-500' :
+                          'bg-gray-200 text-gray-500'}
+                      `}
+                    >
+                      {isDone ? (
+                        <Check className="h-5 w-5" />
+                      ) : (
+                        <item.icon className="h-5 w-5" />
+                      )}
+                    </div>
+                    <div className="ml-3 hidden sm:block">
+                      <p className={`font-medium transition-colors ${
+                        isDone ? 'text-brand-primary-700' :
+                        isActive ? 'text-brand-primary-700' :
+                        'text-gray-500'
+                      }`}>
+                        {item.title}
+                      </p>
+                    </div>
+                    {index < 3 && (
+                      <div className={`flex-1 h-1 mx-4 rounded-full ${
+                        isDone ? 'bg-brand-primary-500' :
+                        isActive ? 'bg-brand-primary-100' :
+                        'bg-gray-200'
+                      }`} />
                     )}
                   </div>
-                  <div className="ml-3 hidden sm:block">
-                    <p className={`font-medium transition-colors ${step >= item.step ? 'text-terracotta-700' : 'text-gray-500'}`}>
-                      {item.title}
-                    </p>
-                  </div>
-                  {index < 3 && (
-                    <div className={`flex-1 h-1 mx-4 rounded-full ${
-                      step > item.step ? 'bg-terracotta-500' : 'bg-gray-200'
-                    }`} />
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -223,7 +327,7 @@ function BookingContent() {
                     </CardHeader>
                     <CardContent>
                       <BookingCalendar
-                        bookingData={bookingData}
+                        bookingData={bookingData as BookingDataForCalendar}
                         updateBookingData={updateBookingData}
                       />
                     </CardContent>
@@ -308,6 +412,13 @@ function BookingContent() {
                     <CardContent>
                       <p>Payment integration would go here.</p>
                       {/* Add payment form elements here */}
+                      <Button
+                        className="btn-primary mt-6"
+                        disabled={isLoading}
+                        onClick={handleBookingSubmit}
+                      >
+                        {isLoading ? 'Redirecting to Payment...' : 'Pay with Card'}
+                      </Button>
                     </CardContent>
                   </Card>
                 )}
@@ -396,7 +507,7 @@ function BookingContent() {
                               return addOn ? (
                                 <li key={addOn.id} className="flex justify-between">
                                   <span className="text-terracotta-700 font-medium">{addOn.name}</span>
-                                  <span className="text-gray-600 font-semibold">+£{getAddonPrice(addOn, bookingData.checkIn)}</span>
+                                  <span className="text-gray-600 font-semibold">+£{getAddonPrice(addOn, bookingData.checkIn ? new Date(bookingData.checkIn) : null)}</span>
                                 </li>
                               ) : null;
                             })}

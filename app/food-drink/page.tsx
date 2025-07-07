@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MapPin, Phone, Clock, Star, ExternalLink, Utensils, Coffee } from 'lucide-react';
 import Link from 'next/link';
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 
 const establishments = [
   {
@@ -193,21 +194,23 @@ export default function FoodDrinkPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-terracotta-600 to-ivy-600 text-white py-16">
-        <div className="container">
+      <section className="relative py-20 sm:py-32 bg-gradient-to-r from-brand-primary-600 to-brand-secondary-600 text-white overflow-hidden">
+        <div className="absolute inset-0 bg-black/20"></div>
+        <div className="container relative z-10">
           <div className="max-w-4xl mx-auto text-center">
-            <Badge className="mb-4 bg-white/20 text-white border-0">
+            <Badge className="mb-6 bg-white/20 text-white border-0 text-sm px-4 py-1.5 rounded-full">
               Local Dining Guide
             </Badge>
-            <h1 className="text-4xl sm:text-5xl font-bold font-playfair mb-4">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-playfair mb-6">
               Food & Drink in Braunston
             </h1>
-            <p className="text-xl opacity-90">
+            <p className="text-xl opacity-90 max-w-3xl mx-auto leading-relaxed">
               Discover the best local restaurants, pubs, and cafés within walking distance of The Corner House
             </p>
           </div>
         </div>
       </section>
+   
 
       {/* Featured Establishments */}
       <section className="section-padding bg-white">

@@ -10,6 +10,7 @@ import { Calendar, ChevronLeft, ChevronRight, Plus, Eye, Edit, X, Users, DollarS
 import { toast } from 'sonner';
 import { calendarService, CalendarDay, CalendarStats, BookingWithDetails } from '@/lib/calendar-service';
 import CreateBookingDialog from '@/components/admin/CreateBookingDialog';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -36,14 +37,18 @@ export default function CalendarPage() {
     try {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth() + 1;
-      
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0);
+      console.log('Fetching calendar stats for:', startDate.toISOString(), 'to', endDate.toISOString());
       // Load calendar days
       const days = await calendarService.generateCalendarDays(year, month);
       setCalendarDays(days);
-      
       // Load statistics
       const monthStats = await calendarService.getMonthStats(year, month);
       setStats(monthStats);
+      if (monthStats.totalBookings === 0) {
+        toast.warning('No bookings found for this month. Try creating a booking with a check-in date in this month.');
+      }
     } catch (error) {
       console.error('Error loading calendar data:', error);
       toast.error('Failed to load calendar data');
@@ -64,6 +69,7 @@ export default function CalendarPage() {
       case 'pending': return 'bg-yellow-500';
       case 'cancelled': return 'bg-red-500';
       case 'completed': return 'bg-blue-500';
+      case 'blocked': return 'bg-gray-400';
       default: return 'bg-gray-500';
     }
   };
@@ -74,6 +80,7 @@ export default function CalendarPage() {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
       case 'completed': return 'bg-blue-100 text-blue-800';
+      case 'blocked': return 'bg-gray-200 text-gray-700 border border-gray-400';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -108,11 +115,14 @@ export default function CalendarPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-400 animate-pulse" />
-          <p className="text-gray-600">Loading calendar...</p>
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-1/3 mb-4" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-24 w-full" />
+          ))}
         </div>
+        <Skeleton className="h-96 w-full" />
       </div>
     );
   }
@@ -283,7 +293,7 @@ export default function CalendarPage() {
                           <div className="flex items-center space-x-1">
                             <div className={`w-2 h-2 rounded-full ${getStatusColor(booking.status)}`}></div>
                             <span className="truncate font-medium">
-                              {booking.guestInfo.firstName} {booking.guestInfo.lastName}
+                              {booking.status === 'blocked' ? 'Blocked (external iCal)' : `${booking.guestInfo.firstName} ${booking.guestInfo.lastName}`}
                             </span>
                           </div>
                           <div className="text-gray-600 text-xs">
@@ -304,7 +314,7 @@ export default function CalendarPage() {
                             <div className="grid grid-cols-2 gap-4">
                               <div>
                                 <h4 className="font-semibold mb-2">Guest Information</h4>
-                                <p><strong>Name:</strong> {selectedBooking.guestInfo.firstName} {selectedBooking.guestInfo.lastName}</p>
+                                <p><strong>Name:</strong> {selectedBooking.status === 'blocked' ? 'Blocked (external iCal)' : `${selectedBooking.guestInfo.firstName} ${selectedBooking.guestInfo.lastName}`}</p>
                                 <p><strong>Email:</strong> {selectedBooking.guestInfo.email}</p>
                                 <p><strong>Phone:</strong> {selectedBooking.guestInfo.phone}</p>
                               </div>
