@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
 interface BookingData {
-  checkIn: string;
-  checkOut: string;
+  checkIn?: string;
+  checkOut?: string;
   guests: number;
   selectedRooms: string[];
   bookingType: string;
@@ -29,14 +29,14 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookingData, updateBo
         updateBookingData({ checkOut: date.toISOString() });
         setSelectingCheckOut(false);
       } else if (!selectingCheckOut) {
-        updateBookingData({ checkIn: date.toISOString(), checkOut: null });
+        updateBookingData({ checkIn: date.toISOString(), checkOut: undefined });
         setSelectingCheckOut(true);
       }
     } else if (date > new Date(bookingData.checkIn)) {
       updateBookingData({ checkOut: date.toISOString() });
       setSelectingCheckOut(false);
     } else {
-      updateBookingData({ checkIn: date.toISOString(), checkOut: null });
+      updateBookingData({ checkIn: date.toISOString(), checkOut: undefined });
       setSelectingCheckOut(true);
     }
   };
