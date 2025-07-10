@@ -45,8 +45,8 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/food-drink" className="text-gray-600 hover:text-brand-primary-600 transition-colors">
-                  Food & Drink
+                <Link href="/places" className="text-gray-600 hover:text-brand-primary-600 transition-colors">
+                  Places of Interest
                 </Link>
               </li>
               <li>

@@ -56,7 +56,7 @@ export default function Home() {
             </Badge>
             <h1 className="text-5xl sm:text-6xl lg:text-8xl font-bold font-playfair mb-6 leading-tight drop-shadow-lg">
               Welcome to
-              <span className="block text-brand-primary-200">The Corner House</span>
+              <span className="block" style={{ color: '#FFFFFF' }}>The Corner House</span>
             </h1>
             <p className="text-xl lg:text-2xl mb-10 max-w-3xl mx-auto leading-relaxed opacity-95 drop-shadow-md">
               A beautifully renovated 5-bedroom property featuring unique animal-themed suites in the heart of Braunston, Daventry.

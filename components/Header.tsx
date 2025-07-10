@@ -19,8 +19,7 @@ const navigation = [
   { name: 'About', href: '/about', icon: Info },
   { name: 'Rooms & Booking', href: '/booking', icon: Calendar },
   { name: 'Our Add-ons', href: '/addons', icon: Plus },
-  { name: 'Food & Drink', href: '/food-drink', icon: Utensils },
-  { name: 'Local Area', href: '/places', icon: MapPin },
+  { name: 'Places of Interest', href: '/places', icon: MapPin },
   { name: 'Contact Us', href: '/contact', icon: Phone },
 ];
 
@@ -28,8 +27,8 @@ const mobileNavigation = [
   { name: 'Home', href: '/', icon: Home },
   { name: 'About', href: '/about', icon: Info },
   { name: 'Rooms', href: '/rooms', icon: Calendar },
-  { name: 'Food & Drink', href: '/food-drink', icon: Utensils },
   { name: 'Add-ons', href: '/addons', icon: Plus },
+  { name: 'Places of Interest', href: '/places', icon: MapPin },
   { name: 'Contact', href: '/contact', icon: Phone },
 ];
 

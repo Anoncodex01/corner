@@ -255,12 +255,26 @@ export default function PlacesPage() {
               Places of Interest
             </h1>
             <p className="text-xl opacity-90 max-w-3xl mx-auto leading-relaxed">
-              Discover amazing attractions, historic sites, and natural beauty around Braunston
+              Discover amazing attractions, historic sites, natural beauty, and local food & drink around Braunston
             </p>
           </div>
         </div>
       </section>
-    
+
+      {/* Food & Drink Section (merged from food-drink/page.tsx) */}
+      <section className="section-padding bg-white">
+        <div className="container">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold font-playfair mb-4 heading-gradient">
+              Food & Drink in Braunston
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Discover the best local restaurants, pubs, and cafés within walking distance of The Corner House.
+            </p>
+          </div>
+          {/* Insert featuredEstablishments, category filter, and filteredEstablishments from food-drink/page.tsx here. You may need to copy the relevant state, data, and components. */}
+        </div>
+      </section>
 
       {/* Local Attractions - Walking Distance */}
       <section className="section-padding bg-white">
@@ -593,22 +607,22 @@ export default function PlacesPage() {
       </section>
 
       {/* Call to Action */}
-      <section className="section-padding bg-gradient-to-r from-terracotta-600 to-ivy-600 text-white">
-        <div className="container text-center">
-          <h2 className="text-3xl lg:text-4xl font-bold font-playfair mb-4">
+      <section className="relative section-padding flex items-center justify-center min-h-[400px] bg-cover bg-center" style={{ backgroundImage: 'linear-gradient(rgba(34,68,59,0.85), rgba(34,68,59,0.7)), url(/images/1.jpg)' }}>
+        <div className="container text-center relative z-10">
+          <h2 className="text-3xl lg:text-4xl font-bold font-playfair mb-4 text-white">
             Ready to Explore?
           </h2>
-          <p className="text-xl mb-8 max-w-2xl mx-auto opacity-90">
+          <p className="text-xl mb-8 max-w-2xl mx-auto opacity-90 text-white">
             Book your stay at The Corner House and discover all these amazing attractions on your doorstep.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild size="lg" className="bg-white text-terracotta-600 hover:bg-gray-100 font-semibold px-8 py-4">
+            <Button asChild size="lg" className="btn-primary rounded-full text-lg px-8 py-4 shadow-lg hover:shadow-xl transition-shadow">
               <Link href="/booking">
                 <Camera className="mr-2 h-5 w-5" />
                 Book Your Stay
               </Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="border-white/20 text-white hover:bg-white/10 px-8 py-4">
+            <Button asChild variant="outline-white" size="lg" className="rounded-full text-lg px-8 py-4 border-white text-white hover:bg-white/10">
               <Link href="/contact">
                 <MapPin className="mr-2 h-5 w-5" />
                 Get Directions

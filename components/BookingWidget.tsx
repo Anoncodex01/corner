@@ -30,7 +30,7 @@ export default function BookingWidget() {
   };
 
   return (
-    <Card className="max-w-4xl mx-auto border-2 border-white/40 bg-white/30 backdrop-blur-xl shadow-2xl rounded-2xl">
+    <Card className="max-w-4xl mx-auto border-2 border-white/40 bg-white shadow-2xl rounded-2xl">
       <CardHeader className="text-center pt-8">
         <CardTitle className="text-3xl font-bold font-playfair text-terracotta-800">
           Find Your Perfect Stay
