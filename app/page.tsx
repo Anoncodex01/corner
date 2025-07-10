@@ -126,6 +126,7 @@ export default function Home() {
       </section>
 
       {/* Room Preview Section */}
+      {/**
       <section className="section-padding bg-white">
         <div className="container">
           <div className="text-center mb-16">
@@ -149,6 +150,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      **/}
 
       {/* Location Highlights */}
       {/**
