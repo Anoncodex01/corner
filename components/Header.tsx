@@ -26,7 +26,7 @@ const navigation = [
 const mobileNavigation = [
   { name: 'Home', href: '/', icon: Home },
   { name: 'About', href: '/about', icon: Info },
-  { name: 'Rooms', href: '/rooms', icon: Calendar },
+  { name: 'Rooms', href: '/booking', icon: Calendar },
   { name: 'Add-ons', href: '/addons', icon: Plus },
   { name: 'Places of Interest', href: '/places', icon: MapPin },
   { name: 'Contact', href: '/contact', icon: Phone },
