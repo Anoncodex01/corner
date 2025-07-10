@@ -57,8 +57,8 @@ export default function Header() {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-3 group">
-            <div className="w-18 h-18 rounded-xl overflow-hidden flex items-center justify-center transition-all duration-300 group-hover:rounded-lg group-hover:scale-105 bg-white">
-              <img src="https://l.icdbcdn.com/oh/ae2c3d70-aade-4076-96e7-f8fe48bb6611.png?w=400" alt="Logo" className="object-contain w-16 h-16" />
+            <div className="w-18 h-18 rounded-xl overflow-hidden flex items-center justify-center transition-all duration-300 group-hover:rounded-lg group-hover:scale-105">
+              <img src="/images/logo.png" alt="Logo" className="object-contain w-16 h-16" />
             </div>
           </Link>
 

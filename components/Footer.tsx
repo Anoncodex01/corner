@@ -11,7 +11,7 @@ export default function Footer() {
           <div className="lg:col-span-1">
             <Link href="/" className="flex items-center space-x-3 mb-4 group">
               <div className="w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center bg-white">
-                <img src="https://l.icdbcdn.com/oh/ae2c3d70-aade-4076-96e7-f8fe48bb6611.png?w=400" alt="Logo" className="object-contain w-12 h-12" />
+                <img src="/images/logo.png" alt="Logo" className="object-contain w-12 h-12" />
               </div>
             </Link>
             <p className="text-gray-600 mb-6 text-sm">

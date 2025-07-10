@@ -176,6 +176,7 @@ export default function About() {
       </section>
 
       {/* Features & Amenities */}
+      {/**
       <section className="section-padding bg-gray-50">
         <div className="container">
           <div className="text-center mb-16">
@@ -203,6 +204,7 @@ export default function About() {
           </div>
         </div>
       </section>
+      **/}
 
       {/* House Rules & Policies */}
       <section className="section-padding bg-gradient-to-r from-brand-primary-50 to-brand-secondary-50">

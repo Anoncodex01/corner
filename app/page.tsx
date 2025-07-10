@@ -151,6 +151,7 @@ export default function Home() {
       </section>
 
       {/* Location Highlights */}
+      {/**
       <section className="section-padding bg-gradient-to-r from-brand-primary-50 to-brand-secondary-50">
         <div className="container">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -211,8 +212,10 @@ export default function Home() {
           </div>
         </div>
       </section>
+      **/}
 
       {/* Testimonials */}
+      {/**
       <section className="section-padding bg-brand-primary-50/70">
         <div className="container">
           <div className="text-center mb-16">
@@ -247,6 +250,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      **/}
 
       {/* Call to Action */}
       <section 
